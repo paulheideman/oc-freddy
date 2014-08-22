@@ -56,7 +56,17 @@
                   (make-node nil 0 []))
                 (make-node nil 3 []))
             (make-node nil 2 [])))
-        [0 1 2 3]))))
+          [0 1 2 3])))
+  (testing "Inserts multiple and puts them in order"
+    (is (=
+          (map :score (insert-into [] (make-node nil 1 [])
+                                      (make-node nil 2 [])
+                                      (make-node nil 0 [])
+                                      (make-node nil 3 [])))
+          [0 1 2 3])))
+  (testing "Inserts no records and returns existing"
+    (let [q [(make-node nil 1 []) (make-node nil 1 []) (make-node nil 1 [])]]
+      (is (= (insert-into q) q)))))
 
 (deftest node-function-test
   (testing "Distance from start is calculated correctly"
@@ -68,3 +78,23 @@
     (is (= :north (first-direction (make-node nil 0 [(make-pos 50 50) (move 100 (make-pos 50 50) :south)]))))
     (is (= :west  (first-direction (make-node nil 0 [(make-pos 50 50) (move 100 (make-pos 50 50) :east)]))))
     (is (= :east  (first-direction (make-node nil 0 [(make-pos 50 50) (move 100 (make-pos 50 50) :west)]))))))
+
+(deftest simple-path-test
+  (testing "Same spot test"
+    (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 1))
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :stay))
+      (is (= distance 0))))
+  (testing "One step test"
+    (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 2))
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 1))))
+  (testing "Two step test"
+    (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 3))
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 2)))))

@@ -49,12 +49,16 @@
 (defrecord Node [pos score history])
 (defn make-node [pos score history] (Node. pos score history))
 
-(defn insert-into [queue node]
-  (if (empty? queue) [node]
-    (let [next (first queue)]
-      (if (< (:score next) (:score node))
-        (lazy-seq (cons next (insert-into (rest queue) node)))
-        (cons node queue)))))
+(defn insert-into
+  ([queue] queue)
+  ([queue node]
+    (if (empty? queue) [node]
+      (let [next (first queue)]
+        (if (< (:score next) (:score node))
+          (lazy-seq (cons next (insert-into (rest queue) node)))
+          (cons node queue)))))
+  ([queue node & more]
+    (reduce insert-into (insert-into queue node) more)))
 
 (defn distance-from-start [node]
   (count (:history node)))
@@ -66,7 +70,10 @@
   (let [history (reverse (:history node))
         f       (first history)
         s       (second history)]
-    (if (zero? (count history)) :stay (direction-to f s))))
+    (if (<= (count history) 1) :stay (direction-to f s))))
+
+(defn with-pos [node pos]
+  (make-node (:pos node) (:score node) (cons pos (:history node))))
 
 (defn simple-path
   ([board from to] (simple-path board to [(make-node from 0 [])] #{from} #{}))
@@ -77,19 +84,17 @@
             score          (:score current)
             before         (:history current)
             valid-neighbor (fn [p] (and (can-move-to board p) (not (contains? open-added p))))]
-        (if (= pos to) [(distance-from-start current) (first-direction current)]
-          (let [neighbors (filter valid-neighbor (neighbors-of (:size board) pos))]
+        (if (= pos to) [(distance-from-start current) (first-direction (with-pos current pos))]
+          (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
             (recur board to
-                   (map #(insert-into open (make-node %
-                                                      (inc (+ (distance-from-start current) (manhattan-distance % to)))
-                                                      (cons pos before)))
-                        neighbors)
+                   (apply insert-into (rest open)
+                          (map #(make-node % (inc (+ (distance-from-start current) (manhattan-distance % to)))
+                                           (cons pos before)) neighbors))
                    (union neighbors open-added)
-                   (conj pos closed))))))))
+                   (conj closed pos))))))))
 
 (defn bot [input]
   "Implement this function to create your bot!"
-  (prn input)
   (first (shuffle ["north", "south", "east", "west", "stay"])))
 
 (defn parse-tile [tile]
