@@ -9,12 +9,14 @@
 (defn hero [i] {:tile :hero :id i})
 
 (def simple-board
-  {:tiles (to-array [wall     wall     wall     wall     wall    wall
-                     wall     air      air      air      air     wall
-                     wall     mine     beer     mine     air     wall
-                     wall     air      air      air      air     wall
-                     wall     air      air      air      air     wall
-                     wall     wall     wall     wall     wall    wall])
+  {:tiles (to-array
+            (with-positions
+              [wall     wall     wall     wall     wall    wall
+               wall     air      air      air      air     wall
+               wall     mine     beer     mine     air     wall
+               wall     air      air      air      air     wall
+               wall     air      air      air      air     wall
+               wall     wall     wall     wall     wall    wall]))
    :size 6})
 
 (deftest safe-coord-test
@@ -111,3 +113,7 @@
           direction (second results)]
       (is (= direction :east))
       (is (= distance 7)))))
+
+(deftest with-positions-test
+  (testing "With positions works"
+    (is (= (:pos (tile-at simple-board (make-pos 2 1))) (make-pos 2 1)))))

@@ -105,20 +105,31 @@
                    (union neighbors open-added)
                    (conj closed pos))))))))
 
+;(defn all-beers
+;  ([board] (all-beers (:tiles bee
+
 (defn bot [input]
   "Implement this function to create your bot!"
   (first (shuffle ["north", "south", "east", "west", "stay"])))
 
-(defn parse-tile [tile]
-  (match (vec tile)
-         [\space \space] {:tile :air}
-         [\# \#] {:tile :wall}
-         [\[ \]] {:tile :tavern}
-         [\$ \-] {:tile :mine}
-         [\$ i] {:tile :mine :of i}
-         [\@ i] {:tile :hero :id (Integer/parseInt (str i))}))
+(defn parse-tile [tile x y]
+  (let [pos (make-pos x y)]
+    (match (vec tile)
+          [\space \space] {:tile :air}
+          [\# \#] {:tile :wall}
+          [\[ \]] {:tile :tavern}
+          [\$ \-] {:tile :mine}
+          [\$ i] {:tile :mine :of i}
+          [\@ i] {:tile :hero :id (Integer/parseInt (str i))})))
 
-(defn parse-tiles [tiles] (to-array (map parse-tile (partition 2 (seq tiles)))))
+(defn with-positions [tiles]
+  (let [size (int (Math/sqrt (count tiles)))]
+    (map (fn [tile x y] (assoc tile :pos (make-pos x y)))
+      tiles
+      (flatten (map #(repeat size %) (range size)))
+      (cycle (range size)))))
+
+(defn parse-tiles [tiles size] (to-array (with-positions (map parse-tile (partition 2 (seq tiles))))))
 
 (defn parse-input [input] (update-in input [:game :board :tiles] parse-tiles))
 
