@@ -117,3 +117,9 @@
 (deftest with-positions-test
   (testing "With positions works"
     (is (= (:pos (tile-at simple-board (make-pos 2 1))) (make-pos 2 1)))))
+
+(deftest tile-filtering-test
+  (testing "Finding all beers works"
+    (let [beers (all-beers simple-board)]
+      (is (contains? (set beers) (make-pos 2 2)))
+      (is (= (count beers) 1)))))

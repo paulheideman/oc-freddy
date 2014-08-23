@@ -105,8 +105,8 @@
                    (union neighbors open-added)
                    (conj closed pos))))))))
 
-;(defn all-beers
-;  ([board] (all-beers (:tiles bee
+(defn all-beers [board]
+  (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
 
 (defn bot [input]
   "Implement this function to create your bot!"
