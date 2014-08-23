@@ -112,3 +112,6 @@
 
 (defn closest-beer [board pos]
   (min-key (partial simple-path pos) (all-beers board)))
+
+(defn closest-capturable-mine [board pos hero-id]
+  (min-key (partial simple-path pos) (capturable-mines board hero-id)))
