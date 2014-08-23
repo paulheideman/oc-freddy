@@ -9,12 +9,13 @@
 (defn hero [i] {:tile :hero :id i})
 
 (def simple-board
-  {:tiles (to-array [wall       wall       wall       wall       wall
-                     wall       air        air        air        wall
-                     wall       (hero 1)   beer       mine       wall
-                     wall       air        air        air        wall
-                     wall       wall       wall       wall       wall])
-   :size 5})
+  {:tiles (to-array [wall     wall     wall     wall     wall    wall
+                     wall     air      air      air      air     wall
+                     wall     mine     beer     mine     air     wall
+                     wall     air      air      air      air     wall
+                     wall     air      air      air      air     wall
+                     wall     wall     wall     wall     wall    wall])
+   :size 6})
 
 (deftest safe-coord-test
   (testing "Test safe min coordinates"
@@ -103,4 +104,10 @@
           distance  (first results)
           direction (second results)]
       (is (= direction :east))
-      (is (= distance 2)))))
+      (is (= distance 2))))
+  (testing "Around the corner"
+    (let [results   (simple-path simple-board (make-pos 1 2) (make-pos 4 2))
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 7)))))

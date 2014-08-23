@@ -43,6 +43,15 @@
 (defn can-move-to [board pos]
   (not (= (:tile (tile-at board pos)) :wall)))
 
+(defn stay-in-place [board pos]
+  (let [tile (tile-at board pos)]
+    (case (:tile tile)
+      :wall   true
+      :air    false
+      :tavern true
+      :mine   true
+      :hero   true)))
+
 (defn neighbors-of [size pos]
   (filter #(not (= pos %)) (map move (repeat size) (repeat pos) neighbor-directions)))
 
@@ -88,8 +97,11 @@
           (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
             (recur board to
                    (apply insert-into (rest open)
-                          (map #(make-node % (inc (+ (distance-from-start current) (manhattan-distance % to)))
-                                           (cons pos before)) neighbors))
+                          (map (fn [p]
+                                 (let [new-pos (if (stay-in-place board p) pos p)]
+                                   (make-node new-pos
+                                              (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
+                                              (cons pos before)))) neighbors))
                    (union neighbors open-added)
                    (conj closed pos))))))))
 
