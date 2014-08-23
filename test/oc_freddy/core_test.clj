@@ -1,6 +1,7 @@
 (ns oc-freddy.core-test
   (:require [clojure.test :refer :all]
-            [oc-freddy.core :refer :all]))
+            [oc-freddy.core :refer :all]
+            [oc-freddy.client :refer :all]))
 
 (def wall {:tile :wall})
 (def air {:tile :air})
