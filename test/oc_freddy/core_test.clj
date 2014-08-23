@@ -18,7 +18,7 @@
                wall     air      air      air      air     wall
                wall     (mine)   beer     (mine 1) air     wall
                wall     air      air      air      air     wall
-               wall     air      air      air      air     wall
+               wall     beer     air      air      air     wall
                wall     wall     wall     wall     wall    wall]))
    :size 6})
 
@@ -125,8 +125,14 @@
   (testing "Finding all beers works"
     (let [beers (all-beers simple-board)]
       (is (contains? (set beers) (make-pos 2 2)))
-      (is (= (count beers) 1))))
+      (is (contains? (set beers) (make-pos 4 1)))
+      (is (= (count beers) 2))))
   (testing "Finding all mines works"
     (let [mines (capturable-mines simple-board 1)]
       (is (contains? (set mines) (make-pos 2 1)))
       (is (= (count mines) 1)))))
+
+(deftest closest-test
+  (testing "Finding closest beer works"
+    (is (closest-beer simple-board (make-pos 1 1)) (make-pos 2 2))
+    (is (closest-beer simple-board (make-pos 4 2)) (make-pos 4 1))))

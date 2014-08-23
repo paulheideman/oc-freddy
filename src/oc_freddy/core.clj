@@ -110,3 +110,5 @@
     (filter #(and (= (:tile %) :mine) (not (= (:of %) hero-id)))
             (:tiles board))))
 
+(defn closest-beer [board pos]
+  (min-key (partial simple-path pos) (all-beers board)))
