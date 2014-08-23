@@ -108,6 +108,11 @@
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
 
+(defn capturable-mines [board hero-id]
+  (map :pos
+    (filter #(and (= (:tile %) :mine) (not (= (:of %) hero-id)))
+            (:tiles board))))
+
 (defn bot [input]
   "Implement this function to create your bot!"
   (first (shuffle ["north", "south", "east", "west", "stay"])))

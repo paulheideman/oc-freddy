@@ -5,7 +5,9 @@
 (def wall {:tile :wall})
 (def air {:tile :air})
 (def beer {:tile :tavern})
-(def mine {:tile :mine})
+(defn mine
+  ([] {:tile :mine})
+  ([id] {:tile :mine :of id}))
 (defn hero [i] {:tile :hero :id i})
 
 (def simple-board
@@ -13,7 +15,7 @@
             (with-positions
               [wall     wall     wall     wall     wall    wall
                wall     air      air      air      air     wall
-               wall     mine     beer     mine     air     wall
+               wall     (mine)   beer     (mine 1) air     wall
                wall     air      air      air      air     wall
                wall     air      air      air      air     wall
                wall     wall     wall     wall     wall    wall]))
@@ -122,4 +124,8 @@
   (testing "Finding all beers works"
     (let [beers (all-beers simple-board)]
       (is (contains? (set beers) (make-pos 2 2)))
-      (is (= (count beers) 1)))))
+      (is (= (count beers) 1))))
+  (testing "Finding all mines works"
+    (let [mines (capturable-mines simple-board 1)]
+      (is (contains? (set mines) (make-pos 2 1)))
+      (is (= (count mines) 1)))))
