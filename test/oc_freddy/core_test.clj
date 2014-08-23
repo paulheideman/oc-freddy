@@ -2,12 +2,18 @@
   (:require [clojure.test :refer :all]
             [oc-freddy.core :refer :all]))
 
+(def wall {:tile :wall})
+(def air {:tile :air})
+(def beer {:tile :tavern})
+(def mine {:tile :mine})
+(defn hero [i] {:tile :hero :id i})
+
 (def simple-board
-  {:tiles (to-array [{:tile :wall}       {:tile :wall}       {:tile :wall}       {:tile :wall}       {:tile :wall}
-                     {:tile :wall}       {:tile :air}        {:tile :air}        {:tile :air}        {:tile :wall}
-                     {:tile :wall}       {:tile :hero :id 1} {:tile :tavern}     {:tile :mine}       {:tile :wall}
-                     {:tile :wall}       {:tile :air}        {:tile :air}        {:tile :air}        {:tile :wall}
-                     {:tile :wall}       {:tile :wall}       {:tile :wall}       {:tile :wall}       {:tile :wall}])
+  {:tiles (to-array [wall       wall       wall       wall       wall
+                     wall       air        air        air        wall
+                     wall       (hero 1)   beer       mine       wall
+                     wall       air        air        air        wall
+                     wall       wall       wall       wall       wall])
    :size 5})
 
 (deftest safe-coord-test
