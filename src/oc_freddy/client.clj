@@ -38,11 +38,23 @@
       (println (str "[" status "] " body))
       (throw+))))
 
+(def dir-map
+  {:north "north"
+   :south "south"
+   :east  "east"
+   :west  "west"
+   :stay  "stay"})
+
 (defn step [from]
-  (loop [input from]
-    (print ".")
-    (let [next (request (:playUrl input) {:dir (bot input)})]
-      (if (:finished (:game next)) (println "") (recur next)))))
+  (loop [input from
+         state {}]
+    ;(print ".")
+    (prn "state" state)
+    (let [result    (bot input state)
+          dir       (first result)
+          new-state (second result)
+          next      (request (:playUrl input) {:dir (dir dir-map)})]
+      (if (:finished (:game next)) (println "") (recur next new-state)))))
 
 (defn training [secret-key turns]
   (let [input (request (str server-url "/api/training") {:key secret-key :turns turns})]

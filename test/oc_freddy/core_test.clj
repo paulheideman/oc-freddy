@@ -115,7 +115,13 @@
           distance  (first results)
           direction (second results)]
       (is (= direction :east))
-      (is (= distance 7)))))
+      (is (= distance 7))))
+  (testing "Path to mine"
+    (let [results   (simple-path simple-board (make-pos 4 2) (make-pos 2 1))
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :north))
+      (is (= distance 3)))))
 
 (deftest with-positions-test
   (testing "With positions works"
@@ -134,8 +140,9 @@
 
 (deftest closest-test
   (testing "Finding closest beer works"
-    (is (closest-beer simple-board (make-pos 1 1)) (make-pos 2 2))
-    (is (closest-beer simple-board (make-pos 4 2)) (make-pos 4 1)))
+    (is (= (closest-beer simple-board (make-pos 1 1)) (make-pos 2 2)))
+    (is (= (closest-beer simple-board (make-pos 4 2)) (make-pos 4 1))))
   (testing "Finding closest capturable mine works"
-    (is (closest-beer simple-board (make-pos 1 1)) (make-pos 2 1))
-    (is (closest-beer simple-board (make-pos 4 2)) (make-pos 2 1))))
+    (is (= (closest-capturable-mine simple-board (make-pos 1 1) 1) (make-pos 2 1)))
+    (is (= (closest-capturable-mine simple-board (make-pos 4 3) 1) (make-pos 2 1)))
+    (is (= (closest-capturable-mine simple-board (make-pos 4 3) 2) (make-pos 2 3)))))

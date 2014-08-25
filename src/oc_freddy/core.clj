@@ -1,7 +1,4 @@
 (ns oc-freddy.core
-  (:gen-class)
-  (:use [oc-freddy.bot :only [bot]])
-  (:use [slingshot.slingshot :only [try+, throw+]])
   (:use [clojure.set :only (union)])
   (:use [clojure.core.match :only (match)]))
 
@@ -89,18 +86,21 @@
             pos            (:pos current)
             score          (:score current)
             before         (:history current)
-            valid-neighbor (fn [p] (and (can-move-to board p) (not (contains? open-added p))))]
+            valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
         (if (= pos to) [(distance-from-start current) (first-direction (with-pos current pos))]
           (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
             (recur board to
                    (apply insert-into (rest open)
                           (map (fn [p]
-                                 (let [new-pos (if (stay-in-place board p) pos p)]
+                                 (let [new-pos (if (and (stay-in-place board p) (not (= to p))) pos p)]
                                    (make-node new-pos
                                               (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
                                               (cons pos before)))) (shuffle neighbors)))
                    (union neighbors open-added)
                    (conj closed pos))))))))
+
+(defn simple-path-distance [board from to] (first (simple-path board from to)))
+(defn simple-path-direction [board from to] (second (simple-path board from to)))
 
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
@@ -111,7 +111,7 @@
             (:tiles board))))
 
 (defn closest-beer [board pos]
-  (min-key (partial simple-path pos) (all-beers board)))
+  (apply min-key (partial simple-path-distance board pos) (all-beers board)))
 
 (defn closest-capturable-mine [board pos hero-id]
-  (min-key (partial simple-path pos) (capturable-mines board hero-id)))
+  (apply min-key (partial simple-path-distance board pos) (capturable-mines board hero-id)))
