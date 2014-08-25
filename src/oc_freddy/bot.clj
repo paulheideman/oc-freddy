@@ -1,6 +1,9 @@
 (ns oc-freddy.bot
   (:use [oc-freddy.core]))
 
+(defn hero-health [input]
+  (:life (:hero input)))
+
 (defn switch-to-acquire-mine [input]
   (let [mine (closest-capturable-mine (:board (:game input)) (:pos (:hero input)) (:id (:hero input)))]
     (prn "mine" mine)
@@ -22,7 +25,9 @@
   (let [path      (simple-path (:board (:game input)) (:pos (:hero input)) (:pos state))
         direction (second path)
         distance  (first path)]
-    [direction (if (> distance 1) state (switch-to-acquire-mine input))]))
+    [direction (if (or (> distance 1) (< (hero-health input) 96))
+               state ; stay the same
+               (switch-to-acquire-mine input))]))
 
 (defn random [input state]
   [(first (shuffle [:north, :south, :east, :west, :stay])) state])
