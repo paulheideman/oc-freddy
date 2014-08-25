@@ -115,3 +115,6 @@
 
 (defn closest-capturable-mine [board pos hero-id]
   (apply min-key (partial simple-path-distance board pos) (capturable-mines board hero-id)))
+
+(defn capturable-mines? [board hero-id]
+  (not (empty? (capturable-mines board hero-id))))
