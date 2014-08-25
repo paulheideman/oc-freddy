@@ -118,3 +118,6 @@
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))
+
+(defn mine-belongs-to-hero? [board pos hero-id]
+  (= (:of (tile-at board pos)) hero-id))

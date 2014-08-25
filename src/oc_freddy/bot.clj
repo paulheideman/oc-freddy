@@ -19,10 +19,11 @@
     (switch-to-get-health input)))
 
 (defn go-to-mine [input state]
-  (let [path      (simple-path (board input) (hero-pos input) (:pos state))
-        direction (second path)
-        distance  (first path)]
-    [direction (if (> distance 1) state (switch-to-get-health input))]))
+  (if (mine-belongs-to-hero? (board input) (:pos state) (hero-id input)) (switch-to-acquire-mine input)
+    (let [path      (simple-path (board input) (hero-pos input) (:pos state))
+          direction (second path)
+          distance  (first path)]
+      [direction (if (> distance 1) state (switch-to-get-health input))])))
 
 (defn go-to-health [input state]
   (let [path      (simple-path (board input) (hero-pos input) (:pos state))
