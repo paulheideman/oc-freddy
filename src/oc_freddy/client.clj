@@ -16,8 +16,8 @@
         [\# \#] {:tile :wall}
         [\[ \]] {:tile :tavern}
         [\$ \-] {:tile :mine}
-        [\$ i] {:tile :mine :of i}
-        [\@ i] {:tile :hero :id (Integer/parseInt (str i))}))
+        [\$ i] {:tile :mine :of (read-string (str i))}
+        [\@ i] {:tile :hero :id (read-string (str i))}))
 
 (defn with-positions [tiles]
   (let [size (int (Math/sqrt (count tiles)))]
