@@ -48,7 +48,7 @@
 (defn step [from]
   (loop [input from
          state {}]
-    ;(print ".")
+    (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) ")  - ")
     (prn "state" state)
     (let [result    (bot input state)
           dir       (first result)

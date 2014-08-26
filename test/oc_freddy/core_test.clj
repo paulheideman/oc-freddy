@@ -140,9 +140,9 @@
 
 (deftest closest-test
   (testing "Finding closest beer works"
-    (is (= (closest-beer simple-board (make-pos 1 1)) (make-pos 2 2)))
-    (is (= (closest-beer simple-board (make-pos 4 2)) (make-pos 4 1))))
+    (is (= (:destination (closest-beer simple-board (make-pos 1 1))) (make-pos 2 2)))
+    (is (= (:destination (closest-beer simple-board (make-pos 4 2))) (make-pos 4 1))))
   (testing "Finding closest capturable mine works"
-    (is (= (closest-capturable-mine simple-board (make-pos 1 1) 1) (make-pos 2 1)))
-    (is (= (closest-capturable-mine simple-board (make-pos 4 3) 1) (make-pos 2 1)))
-    (is (= (closest-capturable-mine simple-board (make-pos 4 3) 2) (make-pos 2 3)))))
+    (is (= (:destination (closest-capturable-mine simple-board (make-pos 1 1) 1)) (make-pos 2 1)))
+    (is (= (:destination (closest-capturable-mine simple-board (make-pos 4 3) 1)) (make-pos 2 1)))
+    (is (= (:destination (closest-capturable-mine simple-board (make-pos 4 3) 2)) (make-pos 2 3)))))

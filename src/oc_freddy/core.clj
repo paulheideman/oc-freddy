@@ -110,11 +110,19 @@
     (filter #(and (= (:tile %) :mine) (not (= (:of %) hero-id)))
             (:tiles board))))
 
+(defrecord Route [distance direction destination])
+(defn make-route
+  ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
+  ([distance direction position] (Route. distance direction position)))
+
+(defn distances-directions-and-destinations [board pos ps]
+  (map #(make-route (simple-path board pos %) %) ps))
+
 (defn closest-beer [board pos]
-  (apply min-key (partial simple-path-distance board pos) (all-beers board)))
+  (apply min-key :distance (distances-directions-and-destinations board pos (all-beers board))))
 
 (defn closest-capturable-mine [board pos hero-id]
-  (apply min-key (partial simple-path-distance board pos) (capturable-mines board hero-id)))
+  (apply min-key :distance (distances-directions-and-destinations board pos (capturable-mines board hero-id))))
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))

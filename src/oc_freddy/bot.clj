@@ -9,13 +9,13 @@
 (defn switch-to-get-health [input]
   (let [beer (closest-beer (board input) (hero-pos input))]
     (if (nil? beer) {:state :random}
-      {:state :full-health :pos beer})))
+      {:state :full-health :pos (:destination beer)})))
 
 (defn switch-to-acquire-mine [input]
   (if (capturable-mines? (board input) (hero-id input))
     (let [mine (closest-capturable-mine (board input) (hero-pos input) (hero-id input))]
       (if (empty? mine) {:state :random}
-        {:state :acquire-mine :pos mine}))
+        {:state :acquire-mine :pos (:destination mine)}))
     (switch-to-get-health input)))
 
 (defn go-to-mine [input state]
