@@ -8,7 +8,7 @@
 
 (require '[clj-http.client :as http])
 
-(def server-url "http://vindinium.org")
+(def server-url "http://hotcpc10092:9000")
 
 (defn parse-tile [tile]
   (match (vec tile)
@@ -53,7 +53,7 @@
     (let [result    (bot input state)
           dir       (first result)
           new-state (second result)
-          next      (request (:playUrl input) {:dir (dir dir-map)})]
+          next      (request (:playUrl input) {:dir (get dir-map dir "stay")})]
       (if (:finished (:game next)) (println "") (recur next new-state)))))
 
 (defn training [secret-key turns]
@@ -70,7 +70,7 @@
       (p (str "Starting arena game " (:viewUrl input)))
       (step input)
       (p (str "Finished arena game " (:viewUrl input)))
-      (when (< it games) (recur (+ it 1))))))
+      (when (< it (read-string games)) (recur (+ it 1))))))
 
 (def usage
   "Usage:
