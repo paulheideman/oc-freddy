@@ -168,3 +168,13 @@
                    (union neighbors open-added)
                    (conj closed pos)
                    unsafe-seq)))))))
+
+(defn safe-distances-directions-and-destinations [board hero-id pos ps]
+  (map #(make-route (safe-path board pos % hero-id) %) ps))
+
+(defn closest-safe-beer [board hero-id pos]
+  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id pos (all-beers board))))
+
+(defn closest-safe-capturable-mine [board pos hero-id]
+  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id pos (capturable-mines board hero-id))))
+

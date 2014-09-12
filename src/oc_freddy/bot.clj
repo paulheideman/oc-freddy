@@ -7,28 +7,36 @@
 (defn hero-id [input] (:id (:hero input)))
 
 (defn switch-to-get-health [input]
-  (let [beer (closest-beer (board input) (hero-pos input))]
-    (if (nil? beer) {:state :random}
-      {:state :full-health :pos (:destination beer)})))
+  (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input))
+        beer      (closest-beer (board input) (hero-pos input))]
+    (if (nil? safe-beer)
+      (if (nil? beer) {:state :random}
+        {:state :full-health :pos (:destination beer)})
+      {:state :full-health :pos (:destination safe-beer)})))
 
 (defn switch-to-acquire-mine [input]
   (if (capturable-mines? (board input) (hero-id input))
-    (let [mine (closest-capturable-mine (board input) (hero-pos input) (hero-id input))]
-      (if (empty? mine) {:state :random}
-        {:state :acquire-mine :pos (:destination mine)}))
+    (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input))
+          mine      (closest-capturable-mine (board input) (hero-pos input) (hero-id input))]
+      (if (nil? safe-mine)
+        (if (nil? mine) {:state :random}
+          {:state :acquire-mine :pos (:destination mine)})
+        {:state :acquire-mine :pos (:destination safe-mine)}))
     (switch-to-get-health input)))
 
 (defn go-to-mine [input state]
   (if (mine-belongs-to-hero? (board input) (:pos state) (hero-id input)) (switch-to-acquire-mine input)
-    (let [path      (simple-path (board input) (hero-pos input) (:pos state))
-          direction (second path)
-          distance  (first path)]
+    (let [safe      (safe-path (board input) (hero-pos input) (:pos state) (hero-id input))
+          path      (simple-path (board input) (hero-pos input) (:pos state))
+          direction (if (= :stay (second safe)) (second path) (second safe))
+          distance  (if (= :stay (second safe)) (first path) (first safe))]
       [direction (if (> distance 1) state (switch-to-get-health input))])))
 
 (defn go-to-health [input state]
-  (let [path      (simple-path (board input) (hero-pos input) (:pos state))
-        direction (second path)
-        distance  (first path)]
+  (let [safe      (safe-path (board input) (hero-pos input) (:pos state) (hero-id input))
+        path      (simple-path (board input) (hero-pos input) (:pos state))
+        direction (if (= :stay (second safe)) (second path) (second safe))
+        distance  (if (= :stay (second safe)) (first path) (first safe))]
     [direction (if (or (> distance 1) (< (hero-health input) 96))
                state ; stay the same
                (switch-to-acquire-mine input))]))
