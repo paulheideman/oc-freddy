@@ -8,7 +8,7 @@
 
 (require '[clj-http.client :as http])
 
-(def server-url "http://hotcpc10092:9000")
+(def server-url "http://vindinium.org")
 
 (defn parse-tile [tile]
   (match (vec tile)
@@ -48,8 +48,8 @@
 (defn step [from]
   (loop [input from
          state {}]
-    (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) ")  - ")
-    (prn "state" state)
+    (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) "-" (:life (:hero input)) ")  - ")
+    (prn state)
     (let [result    (bot input state)
           dir       (first result)
           new-state (second result)

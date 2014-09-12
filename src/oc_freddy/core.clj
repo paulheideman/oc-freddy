@@ -115,6 +115,13 @@
     (filter #(and (= (:tile %) :hero) (not (= (:id %) hero-id)))
             (:tiles board))))
 
+(defn scary-enemy-locations [board hero-id life heroes]
+  (map :pos
+    (filter #(and (= (:tile %) :hero)
+                  (not (= (:id %) hero-id))
+                  (> (:life (get heroes (:id %))) life))
+            (:tiles board))))
+
 (defrecord Route [distance direction destination])
 (defn make-route
   ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
@@ -136,18 +143,17 @@
   (= (:of (tile-at board pos)) hero-id))
 
 (defn unsafe-locations
-  ([board hero-id]
+  ([board hero-id life heroes]
     (let [can-move-from-neighbors (fn [pos] (filter #(not (stay-in-place board %))
                                                           (neighbors-of (:size board) pos)))
-          starting-locations      (enemy-locations board hero-id)]
-      (unsafe-locations board can-move-from-neighbors (set (union starting-locations (mapcat can-move-from-neighbors starting-locations))))))
-  ([board can-move-from-neighbors previous]
+          starting-locations      (scary-enemy-locations board hero-id life heroes)]
+      (unsafe-locations can-move-from-neighbors
+                        (set (union starting-locations (mapcat can-move-from-neighbors starting-locations))))))
+  ([can-move-from-neighbors previous]
     (let [new-set (union previous (set (mapcat can-move-from-neighbors previous)))]
-      (lazy-seq (cons new-set (unsafe-locations board can-move-from-neighbors new-set))))))
+      (lazy-seq (cons new-set (unsafe-locations can-move-from-neighbors new-set))))))
 
-(defn safe-path
-  ([board from to hero-id] (safe-path board to [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id)))
-  ([board to open open-added closed unsafe-seq]
+(defn safe-path-search [board to open open-added closed unsafe-seq]
     (if (empty? open) [Integer/MAX_VALUE :stay]
       (let [current        (first open)
             pos            (:pos current)
@@ -167,14 +173,17 @@
                                               (cons pos before)))) (shuffle neighbors)))
                    (union neighbors open-added)
                    (conj closed pos)
-                   unsafe-seq)))))))
+                   unsafe-seq))))))
 
-(defn safe-distances-directions-and-destinations [board hero-id pos ps]
-  (pmap #(make-route (safe-path board pos % hero-id) %) ps))
+(defn safe-path [board from to hero-id life heroes]
+  (safe-path-search board to [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)))
 
-(defn closest-safe-beer [board hero-id pos]
-  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id pos (all-beers board))))
+(defn safe-distances-directions-and-destinations [board hero-id life heroes pos ps]
+  (map #(make-route (safe-path board pos % hero-id life heroes) %) ps))
 
-(defn closest-safe-capturable-mine [board pos hero-id]
-  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id pos (capturable-mines board hero-id))))
+(defn closest-safe-beer [board hero-id pos life heroes]
+  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id life heroes pos (all-beers board))))
+
+(defn closest-safe-capturable-mine [board pos hero-id life heroes]
+  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id life heroes pos (capturable-mines board hero-id))))
 
