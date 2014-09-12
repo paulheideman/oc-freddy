@@ -4,7 +4,11 @@
 (defn hero-health [input] (:life (:hero input)))
 (defn board [input] (:board (:game input)))
 (defn hero-pos [input] (:pos (:hero input)))
+(defn hero-spawn-pos [input] (:spawnPos (:hero input)))
 (defn hero-id [input] (:id (:hero input)))
+
+(defn death? [input]
+  (and (= (hero-health input) 100) (= (hero-pos input) (hero-spawn-pos input))))
 
 (defn switch-to-get-health [input]
   (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input))
@@ -51,4 +55,9 @@
     :full-health  (go-to-health input state)
     nil           (recur input (switch-to-acquire-mine input))))
 
-(defn bot [input state] (choose-action input state))
+(defn bot [input state]
+  (if (death? input)
+    (do
+      (println "Died!")
+      (choose-action input {}))
+    (choose-action input state)))
