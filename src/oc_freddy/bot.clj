@@ -51,8 +51,12 @@
 (defn choose-action [input state]
   (case (:state state)
     :random       (random input state)
-    :acquire-mine (go-to-mine input state)
-    :full-health  (go-to-health input state)
+    :acquire-mine (let [correct-state (switch-to-acquire-mine input)]
+                    (if (= correct-state state) (go-to-mine input state)
+                      (recur input correct-state)))
+    :full-health  (let [correct-state (switch-to-get-health input)]
+                    (if (= correct-state state) (go-to-health input state)
+                      (recur input correct-state)))
     nil           (recur input (switch-to-acquire-mine input))))
 
 (defn bot [input state]
