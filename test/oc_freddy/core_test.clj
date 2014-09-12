@@ -146,3 +146,66 @@
     (is (= (:destination (closest-capturable-mine simple-board (make-pos 1 1) 1)) (make-pos 2 1)))
     (is (= (:destination (closest-capturable-mine simple-board (make-pos 4 3) 1)) (make-pos 2 1)))
     (is (= (:destination (closest-capturable-mine simple-board (make-pos 4 3) 2)) (make-pos 2 3)))))
+
+(def hero-board
+  {:tiles (to-array
+            (with-positions
+              [wall     wall     wall     wall     wall    wall     air      wall
+               wall     air      air      (mine)   air     (hero 2) air      wall
+               wall     air      air      air      air     air      air      wall
+               wall     air      wall     beer     air     air      air      wall
+               wall     air      wall     air      air     air      air      wall
+               wall     air      air      air      air     air      air      wall
+               wall     air      air      air      air     air      air      wall
+               wall     wall     wall     wall     wall    wall     wall     wall]))
+   :size 8})
+
+(deftest unsafe-locations-test
+  (testing "Unsafe locations works"
+    (let [locs (unsafe-locations hero-board 1)
+          f    (first locs)
+          s    (second locs)]
+      (is (contains? f (make-pos 1 5)))
+      (is (contains? f (make-pos 2 5)))
+      (is (contains? f (make-pos 2 6)))
+      (is (not (contains? f (make-pos 3 6))))
+      (is (not (contains? s (make-pos 1 3))))
+      (is (contains? s (make-pos 3 6))))))
+
+(deftest safe-path-test
+  (testing "Same spot test"
+    (let [results   (safe-path hero-board (make-pos 1 1) (make-pos 1 1) 1)
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :stay))
+      (is (= distance 0))))
+  (testing "One step test"
+    (let [results   (safe-path simple-board (make-pos 1 1) (make-pos 1 2) 1)
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 1))))
+  (testing "Two step test"
+    (let [results   (safe-path hero-board (make-pos 1 1) (make-pos 1 3) 1)
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 2))))
+  (testing "Around the corner"
+    (let [results   (safe-path hero-board (make-pos 2 2) (make-pos 5 2) 1)
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :west))
+      (is (= distance 5))))
+  (testing "Path to beer"
+    (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 3 3) 1)
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 3))))
+  (testing "Not safe path"
+    (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 1 5) 1)
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :stay)))))
+

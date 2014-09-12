@@ -110,6 +110,11 @@
     (filter #(and (= (:tile %) :mine) (not (= (:of %) hero-id)))
             (:tiles board))))
 
+(defn enemy-locations [board hero-id]
+  (map :pos
+    (filter #(and (= (:tile %) :hero) (not (= (:id %) hero-id)))
+            (:tiles board))))
+
 (defrecord Route [distance direction destination])
 (defn make-route
   ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
@@ -129,3 +134,37 @@
 
 (defn mine-belongs-to-hero? [board pos hero-id]
   (= (:of (tile-at board pos)) hero-id))
+
+(defn unsafe-locations
+  ([board hero-id]
+    (let [can-move-from-neighbors (fn [pos] (filter #(not (stay-in-place board %))
+                                                          (neighbors-of (:size board) pos)))
+          starting-locations      (enemy-locations board hero-id)]
+      (unsafe-locations board can-move-from-neighbors (set (union starting-locations (mapcat can-move-from-neighbors starting-locations))))))
+  ([board can-move-from-neighbors previous]
+    (let [new-set (union previous (set (mapcat can-move-from-neighbors previous)))]
+      (lazy-seq (cons new-set (unsafe-locations board can-move-from-neighbors new-set))))))
+
+(defn safe-path
+  ([board from to hero-id] (safe-path board to [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id)))
+  ([board to open open-added closed unsafe-seq]
+    (if (empty? open) [Integer/MAX_VALUE :stay]
+      (let [current        (first open)
+            pos            (:pos current)
+            score          (:score current)
+            before         (:history current)
+            step           (count before)
+            unsafe         (nth unsafe-seq step)
+            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
+        (if (= pos to) [(distance-from-start current) (first-direction (with-pos current pos))]
+          (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
+            (recur board to
+                   (apply insert-into (rest open)
+                          (map (fn [p]
+                                 (let [new-pos (if (and (stay-in-place board p) (not (= to p))) pos p)]
+                                   (make-node new-pos
+                                              (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
+                                              (cons pos before)))) (shuffle neighbors)))
+                   (union neighbors open-added)
+                   (conj closed pos)
+                   unsafe-seq)))))))
