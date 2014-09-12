@@ -127,14 +127,22 @@
   ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
   ([distance direction position] (Route. distance direction position)))
 
-(defn distances-directions-and-destinations [board pos ps]
-  (map #(make-route (simple-path board pos %) %) ps))
+(defn shortest-distance [route-func from ps]
+  (let [ds (map (partial manhattan-distance from) ps)]
+    (loop [p-and-ds (sort-by second (map vector ps ds))
+           shortest nil]
+      (if (empty? p-and-ds) shortest
+        (let [[p d] (first p-and-ds)]
+          (if (> d (or (:distance shortest) Integer/MAX_VALUE)) shortest
+            (recur (rest p-and-ds)
+              (let [route    (route-func from p)]
+                (if (< (:distance route) (or (:distance shortest) Integer/MAX_VALUE)) route shortest)))))))))
 
 (defn closest-beer [board pos]
-  (apply min-key :distance (distances-directions-and-destinations board pos (all-beers board))))
+  (shortest-distance (fn [f t] (make-route (simple-path board f t) t)) pos (all-beers board)))
 
 (defn closest-capturable-mine [board pos hero-id]
-  (apply min-key :distance (distances-directions-and-destinations board pos (capturable-mines board hero-id))))
+  (shortest-distance (fn [f t] (make-route (simple-path board f t) t)) pos (capturable-mines board hero-id)))
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))
@@ -182,8 +190,7 @@
   (map #(make-route (safe-path board pos % hero-id life heroes) %) ps))
 
 (defn closest-safe-beer [board hero-id pos life heroes]
-  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id life heroes pos (all-beers board))))
+  (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (all-beers board)))
 
 (defn closest-safe-capturable-mine [board pos hero-id life heroes]
-  (apply min-key :distance (safe-distances-directions-and-destinations board hero-id life heroes pos (capturable-mines board hero-id))))
-
+  (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (capturable-mines board hero-id)))
