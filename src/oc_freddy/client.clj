@@ -4,6 +4,7 @@
   (:use [oc-freddy.core :only [make-pos]])
   (:use [slingshot.slingshot :only [try+, throw+]])
   (:use [clojure.set :only (union)])
+  (:use [clojure.java.browse :only (browse-url)])
   (:use [clojure.core.match :only (match)]))
 
 (require '[clj-http.client :as http])
@@ -47,10 +48,10 @@
 
 (defn step [from]
   (loop [input from
-         state {}]
+         state {:start "start"}]
     (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) "-" (:life (:hero input)) ")  - ")
     (prn state)
-    (let [result    (bot input state)
+    (let [result    (bot input)
           dir       (first result)
           new-state (second result)
           next      (request (:playUrl input) {:dir (get dir-map dir "stay")})]
@@ -59,6 +60,7 @@
 (defn training [secret-key turns]
   (let [input (request (str server-url "/api/training") {:key secret-key :turns turns})]
     (println (str "Starting training game " (:viewUrl input)))
+    (browse-url (:viewUrl input))
     (step input)
     (println (str "Finished training game " (:viewUrl input)))))
 

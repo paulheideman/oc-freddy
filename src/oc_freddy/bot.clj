@@ -3,67 +3,81 @@
 
 (defn hero-health [input] (:life (:hero input)))
 (defn board [input] (:board (:game input)))
+(defn board-size [input] (:size (board input)))
 (defn hero-pos [input] (:pos (:hero input)))
 (defn hero-spawn-pos [input] (:spawnPos (:hero input)))
 (defn hero-id [input] (:id (:hero input)))
 (defn hero-life [input] (:life (:hero input)))
 (defn heroes [input] (into {} (for [[k v] (group-by :id (:heroes (:game input)))] [k (first v)])))
 
-(defn death? [input]
-  (and (= (hero-health input) 100) (= (hero-pos input) (hero-spawn-pos input))))
+(defn full-health? [input]
+  (>= (hero-life input) 99))
 
-(defn switch-to-get-health [input]
-  (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input) (hero-life input) (heroes input))
-        beer      (closest-beer (board input) (hero-pos input))]
-    (if (nil? safe-beer)
-      (if (nil? beer) {:state :random}
-        {:state :full-health :pos (:destination beer)})
-      {:state :full-health :pos (:destination safe-beer)})))
+(defn make-return [direction action & ps]
+  (prn "make-return" direction action)
+  [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
 
-(defn switch-to-acquire-mine [input]
-  (if (capturable-mines? (board input) (hero-id input))
-    (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))
-          mine      (closest-capturable-mine (board input) (hero-pos input) (hero-id input))]
-      (if (nil? safe-mine)
-        (if (nil? mine) {:state :random}
-          {:state :acquire-mine :pos (:destination mine)})
-        {:state :acquire-mine :pos (:destination safe-mine)}))
-    (switch-to-get-health input)))
+(defn not-closer-to-beer [input h]
+  (> (or (:distance (closest-beer (board input) (:pos h))) Integer/MAX_VALUE)
+     (or (:distance (closest-beer (board input) (hero-pos input))) Integer/MAX_VALUE)))
 
-(defn go-to-mine [input state]
-  (if (mine-belongs-to-hero? (board input) (:pos state) (hero-id input)) (switch-to-acquire-mine input)
-    (let [safe      (safe-path (board input) (hero-pos input) (:pos state) (hero-id input) (hero-life input) (heroes input))
-          path      (simple-path (board input) (hero-pos input) (:pos state))
-          direction (if (= :stay (second safe)) (second path) (second safe))
-          distance  (if (= :stay (second safe)) (first path) (first safe))]
-      [direction (if (> distance 1) state (switch-to-get-health input))])))
+(defn vulnerable-enemy [input h]
+  (and (< (:life h) (- (hero-life input) 20))
+       (not-closer-to-beer input h)))
 
-(defn go-to-health [input state]
-  (let [safe      (safe-path (board input) (hero-pos input) (:pos state) (hero-id input) (hero-life input) (heroes input))
-        path      (simple-path (board input) (hero-pos input) (:pos state))
-        direction (if (= :stay (second safe)) (second path) (second safe))
-        distance  (if (= :stay (second safe)) (first path) (first safe))]
-    [direction (if (or (> distance 1) (< (hero-health input) 96))
-               state ; stay the same
-               (switch-to-acquire-mine input))]))
+(defn vulnerable-enemies [input]
+  (filter (partial vulnerable-enemy input) (vals (heroes input))))
 
-(defn random [input state]
-  [(first (shuffle [:north, :south, :east, :west, :stay])) state])
+(defn kill-enemy [input]
+  (let [targets    (vulnerable-enemies input)
+        paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
+                                    (- (hero-life input) 20) (heroes input)) targets)
+        path       (first (sort-by first (filter #(not (nil? %)) paths)))]
+    (prn "kill-enemy" targets (hero-pos input) (map :pos targets) (hero-id input) (- (hero-life input) 20) paths)
+    (if-not (empty? path)
+      (make-return (second path) :kill-enemy :target (:destination path)))))
 
-(defn choose-action [input state]
-  (case (:state state)
-    :random       (random input state)
-    :acquire-mine (let [correct-state (switch-to-acquire-mine input)]
-                    (if (= correct-state state) (go-to-mine input state)
-                      (recur input correct-state)))
-    :full-health  (let [correct-state (switch-to-get-health input)]
-                    (if (= correct-state state) (go-to-health input state)
-                      (recur input correct-state)))
-    nil           (recur input (switch-to-acquire-mine input))))
+(defn tavern-neighbors [input]
+  (map :pos (filter #(= (:tile %) :tavern)
+                    (map (partial tile-at (board input)) (neighbors-of (board-size input) (hero-pos input))))))
 
-(defn bot [input state]
-  (if (death? input)
-    (do
-      (println "Died!")
-      (choose-action input {}))
-    (choose-action input state)))
+(defn get-full-health [input]
+  (let [beer (tavern-neighbors input)]
+    (if (and (< (hero-life input) 99) (not (empty? beer)))
+      (make-return
+        (first (map (partial direction-to (hero-pos input))
+                    (shuffle beer)))
+        :get-full-health))))
+
+(defn spar-enemy [input]
+  nil)
+
+(defn go-to-mine [input]
+  (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))]
+    (if (> (- (hero-life input) (:distance safe-mine)) 20)
+      (and safe-mine
+        (make-return (:direction safe-mine) :go-to-mine :destination (:destination safe-mine))))))
+
+(defn go-to-beer [input]
+  (if (not (full-health? input))
+    (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input) (hero-life input) (heroes input))]
+      (and safe-beer (make-return (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
+
+; [board from to hero-id life heroes]
+(defn go-to-spawn [input]
+  (let [direction (second (safe-path (board input) (hero-pos input) (hero-spawn-pos input) (hero-id input)
+                                     (hero-life input) (heroes input)))]
+    (and direction (make-return direction :go-to-spawn))))
+
+(defn run [input]
+  nil)
+
+(defn bot [input]
+  (prn "mine" (go-to-mine input))
+  (or (kill-enemy input)
+      (spar-enemy input)
+      (get-full-health input)
+      (go-to-mine input)
+      (go-to-beer input)
+      (go-to-spawn input)
+      (run input)))

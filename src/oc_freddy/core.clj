@@ -81,7 +81,7 @@
 (defn simple-path
   ([board from to] (simple-path board to [(make-node from 0 [])] #{from} #{}))
   ([board to open open-added closed]
-    (if (empty? open) [Integer/MAX_VALUE :stay]
+    (if (empty? open) nil
       (let [current        (first open)
             pos            (:pos current)
             score          (:score current)
@@ -136,7 +136,8 @@
           (if (> d (or (:distance shortest) Integer/MAX_VALUE)) shortest
             (recur (rest p-and-ds)
               (let [route    (route-func from p)]
-                (if (< (:distance route) (or (:distance shortest) Integer/MAX_VALUE)) route shortest)))))))))
+                (if (< (or (:distance route) Integer/MAX_VALUE)
+                       (or (:distance shortest) Integer/MAX_VALUE)) route shortest)))))))))
 
 (defn closest-beer [board pos]
   (shortest-distance (fn [f t] (make-route (simple-path board f t) t)) pos (all-beers board)))
@@ -162,7 +163,7 @@
       (lazy-seq (cons new-set (unsafe-locations can-move-from-neighbors new-set))))))
 
 (defn safe-path-search [board to open open-added closed unsafe-seq]
-    (if (empty? open) [Integer/MAX_VALUE :stay]
+    (if (empty? open) nil ; no path found
       (let [current        (first open)
             pos            (:pos current)
             score          (:score current)
@@ -186,11 +187,9 @@
 (defn safe-path [board from to hero-id life heroes]
   (safe-path-search board to [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)))
 
-(defn safe-distances-directions-and-destinations [board hero-id life heroes pos ps]
-  (map #(make-route (safe-path board pos % hero-id life heroes) %) ps))
-
 (defn closest-safe-beer [board hero-id pos life heroes]
   (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (all-beers board)))
 
 (defn closest-safe-capturable-mine [board pos hero-id life heroes]
   (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (capturable-mines board hero-id)))
+

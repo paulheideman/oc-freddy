@@ -207,8 +207,6 @@
       (is (= direction :east))
       (is (= distance 3))))
   (testing "Not safe path"
-    (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 1 5) 1 10 full-life-heroes)
-          distance  (first results)
-          direction (second results)]
-      (is (= direction :stay)))))
+    (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 1 5) 1 10 full-life-heroes)]
+      (is (nil? results)))))
 
