@@ -178,7 +178,7 @@
             step           (count before)
             unsafe         (nth unsafe-seq step)
             valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
-        (if (= pos to) [(distance-from-start current) (first-direction (with-pos current pos))]
+        (if (= pos to) (make-route (distance-from-start current) (first-direction (with-pos current pos)) pos)
           (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
             (recur board to
                    (apply insert-into (rest open)
@@ -197,10 +197,10 @@
     (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} unsafe-seq)))
 
 (defn closest-safe-beer [board hero-id pos life heroes]
-  (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (all-beers board)))
+  (shortest-distance (fn [f t] (safe-path board f t hero-id life heroes)) pos (all-beers board)))
 
 (defn closest-safe-capturable-mine [board pos hero-id life heroes]
-  (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (capturable-mines board hero-id)))
+  (shortest-distance (fn [f t] (safe-path board f t hero-id life heroes)) pos (capturable-mines board hero-id)))
 
 (defn run-path-score [heroes pos]
   (- (apply min (map (partial manhattan-distance pos) heroes))))

@@ -35,9 +35,9 @@
   (let [targets    (vulnerable-enemies input)
         paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
-        path       (first (sort-by first (filter (comp not nil?) paths)))]
+        path       (first (sort-by :distance (filter (comp not nil?) paths)))]
     (if-not (empty? path)
-      (make-return (second path) :kill-enemy :target (:destination path)))))
+      (make-return (:direction path) :kill-enemy :target (:destination path)))))
 
 (defn tavern-neighbors [input]
   (map :pos (filter #(= (:tile %) :tavern)
@@ -66,7 +66,7 @@
       (and safe-beer (make-return (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
 (defn go-to-spawn [input]
-  (let [direction (second (safe-path (board input) (hero-pos input) (hero-spawn-pos input) (hero-id input)
+  (let [direction (:direction (safe-path (board input) (hero-pos input) (hero-spawn-pos input) (hero-id input)
                                      (hero-life input) (heroes input)))]
     (and direction (make-return direction :go-to-spawn))))
 

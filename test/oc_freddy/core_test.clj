@@ -184,32 +184,32 @@
 (deftest safe-path-test
   (testing "Same spot test"
     (let [results   (safe-path hero-board (make-pos 1 1) (make-pos 1 1) 1 10 full-life-heroes)
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :stay))
       (is (= distance 0))))
   (testing "One step test"
     (let [results   (safe-path simple-board (make-pos 1 1) (make-pos 1 2) 1 10 full-life-heroes)
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 1))))
   (testing "Two step test"
     (let [results   (safe-path hero-board (make-pos 1 1) (make-pos 1 3) 1 10 full-life-heroes)
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 2))))
   (testing "Around the corner"
     (let [results   (safe-path hero-board (make-pos 2 2) (make-pos 5 2) 1 10 full-life-heroes)
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :west))
       (is (= distance 5))))
   (testing "Path to beer"
     (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 3 3) 1 10 full-life-heroes)
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 3))))
   (testing "Not safe path"
