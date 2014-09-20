@@ -9,6 +9,7 @@
 (defn hero-id [input] (:id (:hero input)))
 (defn hero-life [input] (:life (:hero input)))
 (defn hero-gold [input] (:gold (:hero input)))
+(defn hero-mine-count [input] (:mineCount (:hero input)))
 (defn heroes [input] (into {} (for [[k v] (group-by :id (:heroes (:game input)))] [k (first v)])))
 
 (defn full-health? [input]
@@ -69,8 +70,12 @@
   (let [direction (:direction (safe-path (board input) unsafe-locations (hero-pos input) (hero-spawn-pos input)))]
     (and direction (make-return direction :go-to-spawn))))
 
+(defn suicide [input]
+  (if (zero? (hero-mine-count input))
+    (make-return (:direction (closest-enemy-or-mine (board input) (hero-pos input) (hero-id input))) :suicide)))
+
 (defn run [input unsafe-locations scary-enemies]
-  (make-return (:direction (run-path (board input) (hero-pos input) unsafe-locations scary-enemies)) :run))
+    (make-return (:direction (run-path (board input) (hero-pos input) unsafe-locations scary-enemies)) :run))
 
 (defn bot [input]
   (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
@@ -81,4 +86,5 @@
         (go-to-mine input unsafe-locations)
         (go-to-beer input unsafe-locations)
         (go-to-spawn input unsafe-locations)
+        (suicide input)
         (run input unsafe-locations scary-enemies))))

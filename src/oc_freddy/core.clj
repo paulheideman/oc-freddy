@@ -202,8 +202,15 @@
 (defn closest-safe-capturable-mine [board pos hero-id unsafe-locations]
   (shortest-distance (partial safe-path board unsafe-locations) pos (capturable-mines board hero-id)))
 
+(defn all-enemies-and-mines [board hero-id]
+  (concat (capturable-mines board hero-id) (enemy-locations board hero-id)))
+
+(defn closest-enemy-or-mine [board pos hero-id]
+  (shortest-distance (partial simple-path board) pos (all-enemies-and-mines board hero-id)))
+
 (defn run-path-score [heroes pos]
-  (- (apply min (map (partial manhattan-distance pos) heroes))))
+  (if (empty? heroes) 0
+    (- (apply min (map (partial manhattan-distance pos) heroes)))))
 
 (defn run-path-search [board open open-added closed unsafe-seq heroes best]
     (if (empty? open) (make-route (distance-from-start best) (first-direction best) (:pos best))
