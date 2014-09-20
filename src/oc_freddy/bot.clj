@@ -54,7 +54,7 @@
 
 (defn go-to-mine [input]
   (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))]
-    (if (> (- (hero-life input) (:distance safe-mine)) 20)
+    (if (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
       (and safe-mine
         (make-return (:direction safe-mine) :go-to-mine :destination (:destination safe-mine))))))
 
