@@ -54,30 +54,31 @@
 (defn spar-enemy [input]
   nil)
 
-(defn go-to-mine [input]
-  (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))]
+(defn go-to-mine [input unsafe-locations]
+  (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) unsafe-locations)]
     (if (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
       (and safe-mine
         (make-return (:direction safe-mine) :go-to-mine :destination (:destination safe-mine))))))
 
-(defn go-to-beer [input]
+(defn go-to-beer [input unsafe-locations]
   (if (and (money? input) (not (full-health? input)))
-    (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input) (hero-life input) (heroes input))]
+    (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations)]
       (and safe-beer (make-return (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
-(defn go-to-spawn [input]
-  (let [direction (:direction (safe-path (board input) (hero-pos input) (hero-spawn-pos input) (hero-id input)
-                                     (hero-life input) (heroes input)))]
+(defn go-to-spawn [input unsafe-locations]
+  (let [direction (:direction (safe-path (board input) unsafe-locations (hero-pos input) (hero-spawn-pos input)))]
     (and direction (make-return direction :go-to-spawn))))
 
-(defn run [input]
-  (make-return (:direction (run-path (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))) :run))
+(defn run [input unsafe-locations scary-enemies]
+  (make-return (:direction (run-path (board input) (hero-pos input) unsafe-locations scary-enemies)) :run))
 
 (defn bot [input]
-  (or (kill-enemy input)
-      (spar-enemy input)
-      (get-full-health input)
-      (go-to-mine input)
-      (go-to-beer input)
-      (go-to-spawn input)
-      (run input)))
+  (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
+        scary-enemies    (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))]
+    (or (kill-enemy input)
+        (spar-enemy input)
+        (get-full-health input)
+        (go-to-mine input unsafe-locations)
+        (go-to-beer input unsafe-locations)
+        (go-to-spawn input unsafe-locations)
+        (run input unsafe-locations scary-enemies))))

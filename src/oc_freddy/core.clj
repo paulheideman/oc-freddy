@@ -192,15 +192,15 @@
                    unsafe-seq))))))
 
 (defn safe-path
-  ([board from to hero-id life heroes] (safe-path board from to (unsafe-locations board hero-id life heroes)))
-  ([board from to unsafe-seq]
+  ([board from to hero-id life heroes] (safe-path board (unsafe-locations board hero-id life heroes) from to))
+  ([board unsafe-seq from to]
     (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} unsafe-seq)))
 
-(defn closest-safe-beer [board hero-id pos life heroes]
-  (shortest-distance (fn [f t] (safe-path board f t hero-id life heroes)) pos (all-beers board)))
+(defn closest-safe-beer [board pos unsafe-locations]
+  (shortest-distance (partial safe-path board unsafe-locations) pos (all-beers board)))
 
-(defn closest-safe-capturable-mine [board pos hero-id life heroes]
-  (shortest-distance (fn [f t] (safe-path board f t hero-id life heroes)) pos (capturable-mines board hero-id)))
+(defn closest-safe-capturable-mine [board pos hero-id unsafe-locations]
+  (shortest-distance (partial safe-path board unsafe-locations) pos (capturable-mines board hero-id)))
 
 (defn run-path-score [heroes pos]
   (- (apply min (map (partial manhattan-distance pos) heroes))))
