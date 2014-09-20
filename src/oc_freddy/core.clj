@@ -39,7 +39,7 @@
 (defn can-move-to [board pos]
   (not (= (:tile (tile-at board pos)) :wall)))
 
-(defn stay-in-place [board pos]
+(defn stay-in-place? [board pos]
   (let [tile (tile-at board pos)]
     (case (:tile tile)
       :wall   true
@@ -94,7 +94,7 @@
             (recur board to
                    (apply insert-into (rest open)
                           (map (fn [p]
-                                 (let [new-pos (if (and (stay-in-place board p) (not (= to p))) pos p)]
+                                 (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
                                    (make-node new-pos
                                               (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
                                               (cons pos before)))) (shuffle neighbors)))
@@ -155,7 +155,7 @@
 
 (defn unsafe-locations
   ([board hero-id life heroes]
-    (let [can-move-from-neighbors (fn [pos] (filter #(not (stay-in-place board %))
+    (let [can-move-from-neighbors (fn [pos] (filter #(not (stay-in-place? board %))
                                                           (neighbors-of (:size board) pos)))
           starting-locations      (scary-enemy-locations board hero-id life heroes)]
       (unsafe-locations can-move-from-neighbors
@@ -168,7 +168,6 @@
     (if (empty? open) nil ; no path found
       (let [current        (first open)
             pos            (:pos current)
-            score          (:score current)
             before         (:history current)
             step           (count before)
             unsafe         (nth unsafe-seq step)
@@ -178,7 +177,7 @@
             (recur board to
                    (apply insert-into (rest open)
                           (map (fn [p]
-                                 (let [new-pos (if (and (stay-in-place board p) (not (= to p))) pos p)]
+                                 (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
                                    (make-node new-pos
                                               (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
                                               (cons pos before)))) (shuffle neighbors)))
@@ -194,4 +193,34 @@
 
 (defn closest-safe-capturable-mine [board pos hero-id life heroes]
   (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (capturable-mines board hero-id)))
+
+(defn run-path-score [heroes pos]
+  (- (apply min (map (partial manhattan-distance pos) heroes))))
+
+(defn run-path-search [board open open-added closed unsafe-seq heroes best]
+    (if (empty? open) [(distance-from-start best) (first-direction best)]
+      (let [current        (first open)
+            pos            (:pos current)
+            before         (:history current)
+            step           (count before)
+            unsafe         (nth unsafe-seq step)
+            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
+        (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
+          (recur board
+                 (apply insert-into (rest open)
+                       (map (fn [p]
+                               (let [new-pos (if (stay-in-place? board p) pos p)]
+                                 (make-node new-pos
+                                           (run-path-score heroes new-pos)
+                                           (cons pos before)))) (shuffle neighbors)))
+                 (union neighbors open-added)
+                 (conj closed pos)
+                 unsafe-seq
+                 heroes
+                 (min-key :score best current))))))
+
+(defn run-path [board from hero-id life heroes]
+  (run-path-search board [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)
+                   (scary-enemy-locations board hero-id life heroes)
+                   (make-node from 0 [])))
 
