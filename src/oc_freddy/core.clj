@@ -80,29 +80,40 @@
 (defn with-pos [node pos]
   (make-node (:pos node) (:score node) (cons pos (:history node))))
 
-(defn simple-path
-  ([board from to] (simple-path board (make-pos to) [(make-node from 0 [])] #{from} #{}))
-  ([board to open open-added closed]
-    (if (empty? open) nil
-      (let [current        (first open)
-            pos            (:pos current)
-            score          (:score current)
-            before         (:history current)
-            valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
-        (if (= pos to) [(distance-from-start current) (first-direction (with-pos current pos))]
-          (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
-            (recur board to
-                   (apply insert-into (rest open)
-                          (map (fn [p]
-                                 (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
-                                   (make-node new-pos
-                                              (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
-                                              (cons pos before)))) (shuffle neighbors)))
-                   (union neighbors open-added)
-                   (conj closed pos))))))))
+(defrecord Route [distance direction destination])
+(defn make-route
+  ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
+  ([distance direction position] (Route. distance direction position)))
 
-(defn simple-path-distance [board from to] (first (simple-path board from to)))
-(defn simple-path-direction [board from to] (second (simple-path board from to)))
+(defn not-visited? [before pos]
+  (not (contains? (set before) pos)))
+
+(defn all-paths-search [board to open]
+  (if (empty? open) []
+    (let [current        (first open)
+          pos            (:pos current)
+          score          (:score current)
+          before         (:history current)
+          valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to board p) (not-visited? before p)))]
+      (if (= pos to) (lazy-seq (cons (make-route (distance-from-start current) (first-direction (with-pos current pos)) pos)
+                                     (all-paths-search board to (rest open))))
+        (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
+          (recur board to
+                  (apply insert-into (rest open)
+                        (map (fn [p]
+                                (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
+                                  (make-node new-pos
+                                            (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
+                                            (cons pos before)))) (shuffle neighbors)))))))))
+
+(defn all-paths [board from to]
+  (all-paths-search board (make-pos to) [(make-node from 0 [])]))
+
+(defn simple-path [board from to]
+  (first (all-paths board from to)))
+
+(defn simple-path-distance [board from to] (:distance (simple-path board from to)))
+(defn simple-path-direction [board from to] (first (:direction (simple-path board from to))))
 
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
@@ -124,11 +135,6 @@
                   (> (:life (get heroes (:id %))) life))
             (:tiles board))))
 
-(defrecord Route [distance direction destination])
-(defn make-route
-  ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
-  ([distance direction position] (Route. distance direction position)))
-
 (defn shortest-distance [route-func from ps]
   (let [ds (map (partial manhattan-distance from) ps)]
     (loop [p-and-ds (sort-by second (map vector ps ds))
@@ -142,10 +148,10 @@
                        (or (:distance shortest) Integer/MAX_VALUE)) route shortest)))))))))
 
 (defn closest-beer [board pos]
-  (shortest-distance (fn [f t] (make-route (simple-path board f t) t)) pos (all-beers board)))
+  (shortest-distance (partial simple-path board) pos (all-beers board)))
 
 (defn closest-capturable-mine [board pos hero-id]
-  (shortest-distance (fn [f t] (make-route (simple-path board f t) t)) pos (capturable-mines board hero-id)))
+  (shortest-distance (partial simple-path board) pos (capturable-mines board hero-id)))
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))

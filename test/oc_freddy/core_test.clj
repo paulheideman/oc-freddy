@@ -94,38 +94,38 @@
 (deftest simple-path-test
   (testing "Same spot test"
     (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 1))
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :stay))
       (is (= distance 0))))
   (testing "One step test"
     (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 2))
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 1))))
   (testing "Two step test"
     (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 3))
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 2))))
   (testing "Around the corner"
     (let [results   (simple-path simple-board (make-pos 1 2) (make-pos 4 2))
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 7))))
   (testing "Path to mine"
     (let [results   (simple-path simple-board (make-pos 4 2) (make-pos 2 1))
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :north))
       (is (= distance 3))))
   (testing "Path to hero"
     (let [results   (simple-path simple-board (make-pos 3 1) (make-pos 4 4))
-          distance  (first results)
-          direction (second results)]
+          distance  (:distance results)
+          direction (:direction results)]
       (is (= direction :east))
       (is (= distance 4)))))
 
