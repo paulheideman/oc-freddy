@@ -88,7 +88,7 @@
 (defn not-visited? [before pos]
   (not (contains? (set before) pos)))
 
-(defn all-paths-search [board to open]
+(defn all-paths-search [board to open max-distance]
   (if (empty? open) []
     (let [current        (first open)
           pos            (:pos current)
@@ -96,18 +96,21 @@
           before         (:history current)
           valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to board p) (not-visited? before p)))]
       (if (= pos to) (lazy-seq (cons (make-route (distance-from-start current) (first-direction (with-pos current pos)) pos)
-                                     (all-paths-search board to (rest open))))
-        (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
-          (recur board to
-                  (apply insert-into (rest open)
-                        (map (fn [p]
-                                (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
-                                  (make-node new-pos
-                                            (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
-                                            (cons pos before)))) (shuffle neighbors)))))))))
+                                     (all-paths-search board to (rest open) max-distance)))
+        (if (= max-distance (inc (distance-from-start current)))
+          (recur board to (rest open) max-distance)
+          (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
+            (recur board to
+                   (apply insert-into (rest open)
+                          (map (fn [p]
+                                  (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
+                                    (make-node new-pos
+                                              (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
+                                              (cons pos before)))) (shuffle neighbors)))
+                   max-distance)))))))
 
 (defn all-paths [board from to]
-  (all-paths-search board (make-pos to) [(make-node from 0 [])]))
+  (all-paths-search board (make-pos to) [(make-node from 0 [])] (* 2 (:size board))))
 
 (defn simple-path [board from to]
   (first (all-paths board from to)))

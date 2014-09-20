@@ -25,9 +25,16 @@
   (> (or (:distance (closest-beer (board input) (:pos h))) Integer/MAX_VALUE)
      (or (:distance (closest-beer (board input) (hero-pos input))) Integer/MAX_VALUE)))
 
+(defn within-one? [board pos h]
+  (< (simple-path-distance board pos (:pos h)) 3))
+
+(defn not-close-enough-to-beer [input h]
+  (< (or (:distance (closest-beer (board input) (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
+
 (defn vulnerable-enemy [input h]
   (and (< (:life h) (- (hero-life input) 20))
-       (not-closer-to-beer input h)))
+       (or (and (within-one? (board input) (hero-pos input) h) (not-close-enough-to-beer input h))
+           (not-closer-to-beer input h))))
 
 (defn vulnerable-enemies [input]
   (filter (partial vulnerable-enemy input) (vals (heroes input))))
