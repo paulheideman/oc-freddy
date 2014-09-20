@@ -191,8 +191,10 @@
                    (conj closed pos)
                    unsafe-seq))))))
 
-(defn safe-path [board from to hero-id life heroes]
-  (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)))
+(defn safe-path
+  ([board from to hero-id life heroes] (safe-path board from to (unsafe-locations board hero-id life heroes)))
+  ([board from to unsafe-seq]
+    (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} unsafe-seq)))
 
 (defn closest-safe-beer [board hero-id pos life heroes]
   (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (all-beers board)))
