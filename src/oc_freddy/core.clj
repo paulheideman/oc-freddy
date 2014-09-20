@@ -206,7 +206,7 @@
   (- (apply min (map (partial manhattan-distance pos) heroes))))
 
 (defn run-path-search [board open open-added closed unsafe-seq heroes best]
-    (if (empty? open) [(distance-from-start best) (first-direction best)]
+    (if (empty? open) (make-route (distance-from-start best) (first-direction best) (:pos best))
       (let [current        (first open)
             pos            (:pos current)
             before         (:history current)

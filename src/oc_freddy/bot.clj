@@ -71,7 +71,7 @@
     (and direction (make-return direction :go-to-spawn))))
 
 (defn run [input]
-  (make-return (second (run-path (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))) :run))
+  (make-return (:direction (run-path (board input) (hero-pos input) (hero-id input) (hero-life input) (heroes input))) :run))
 
 (defn bot [input]
   (or (kill-enemy input)
