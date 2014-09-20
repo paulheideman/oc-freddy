@@ -32,8 +32,7 @@
   (let [targets    (vulnerable-enemies input)
         paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
-        path       (first (sort-by first (filter #(not (nil? %)) paths)))]
-    (prn "kill-enemy" targets (hero-pos input) (map :pos targets) (hero-id input) (- (hero-life input) 20) paths)
+        path       (first (sort-by first (filter (comp not nil?) paths)))]
     (if-not (empty? path)
       (make-return (second path) :kill-enemy :target (:destination path)))))
 
@@ -73,7 +72,6 @@
   nil)
 
 (defn bot [input]
-  (prn "mine" (go-to-mine input))
   (or (kill-enemy input)
       (spar-enemy input)
       (get-full-health input)

@@ -14,12 +14,12 @@
 (def simple-board
   {:tiles (to-array
             (with-positions
-              [wall     wall     wall     wall     wall    wall
-               wall     air      air      air      air     wall
-               wall     (mine)   beer     (mine 1) air     wall
-               wall     air      air      air      air     wall
-               wall     beer     air      air      air     wall
-               wall     wall     wall     wall     wall    wall]))
+              [wall     wall     wall     wall     wall     wall
+               wall     air      air      air      air      wall
+               wall     (mine)   beer     (mine 1) air      wall
+               wall     air      air      air      air      wall
+               wall     beer     air      air      (hero 4) wall
+               wall     wall     wall     wall     wall     wall]))
    :size 6})
 
 (deftest safe-coord-test
@@ -121,7 +121,13 @@
           distance  (first results)
           direction (second results)]
       (is (= direction :north))
-      (is (= distance 3)))))
+      (is (= distance 3))))
+  (testing "Path to hero"
+    (let [results   (simple-path simple-board (make-pos 3 1) (make-pos 4 4))
+          distance  (first results)
+          direction (second results)]
+      (is (= direction :east))
+      (is (= distance 4)))))
 
 (deftest with-positions-test
   (testing "With positions works"

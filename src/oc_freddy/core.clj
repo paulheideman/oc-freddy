@@ -5,7 +5,9 @@
 (def neighbor-directions #{:north, :south, :east, :west})
 
 (defrecord Pos [x y])
-(defn make-pos [x y] (Pos. x y))
+(defn make-pos
+  ([x y] (Pos. x y))
+  ([xy] (Pos. (:x xy) (:y xy))))
 
 (def direction-deltas
   {:north {:x -1 :y 0}
@@ -79,7 +81,7 @@
   (make-node (:pos node) (:score node) (cons pos (:history node))))
 
 (defn simple-path
-  ([board from to] (simple-path board to [(make-node from 0 [])] #{from} #{}))
+  ([board from to] (simple-path board (make-pos to) [(make-node from 0 [])] #{from} #{}))
   ([board to open open-added closed]
     (if (empty? open) nil
       (let [current        (first open)
@@ -185,7 +187,7 @@
                    unsafe-seq))))))
 
 (defn safe-path [board from to hero-id life heroes]
-  (safe-path-search board to [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)))
+  (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)))
 
 (defn closest-safe-beer [board hero-id pos life heroes]
   (shortest-distance (fn [f t] (make-route (safe-path board f t hero-id life heroes) t)) pos (all-beers board)))
