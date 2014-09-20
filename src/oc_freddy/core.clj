@@ -46,7 +46,7 @@
       :air    false
       :tavern true
       :mine   true
-      :hero   true)))
+      :hero   false)))
 
 (defn neighbors-of [size pos]
   (filter #(not (= pos %)) (map move (repeat size) (repeat pos) neighbor-directions)))
@@ -57,7 +57,7 @@
 (defn insert-into
   ([queue] queue)
   ([queue node]
-    (if (empty? queue) [node]
+    (if (nil? (first queue)) [node]
       (let [next (first queue)]
         (if (< (:score next) (:score node))
           (lazy-seq (cons next (insert-into (rest queue) node)))
@@ -113,7 +113,7 @@
   (first (all-paths board from to)))
 
 (defn simple-path-distance [board from to] (:distance (simple-path board from to)))
-(defn simple-path-direction [board from to] (first (:direction (simple-path board from to))))
+(defn simple-path-direction [board from to] (:direction (simple-path board from to)))
 
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
@@ -225,8 +225,10 @@
                  heroes
                  (min-key :score best current))))))
 
-(defn run-path [board from hero-id life heroes]
-  (run-path-search board [(make-node from 0 [])] #{from} #{} (unsafe-locations board hero-id life heroes)
-                   (scary-enemy-locations board hero-id life heroes)
-                   (make-node from 0 [])))
+(defn run-path
+  ([board from hero-id life heroes] (run-path board from
+                                              (unsafe-locations board hero-id life heroes)
+                                              (scary-enemy-locations board hero-id life heroes)))
+  ([board from unsafe-seq scary-heroes]
+    (run-path-search board [(make-node from 0 [])] #{from} #{} unsafe-seq scary-heroes (make-node from 0 []))))
 
