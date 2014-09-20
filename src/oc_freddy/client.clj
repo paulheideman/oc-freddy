@@ -70,6 +70,7 @@
           _ (p "Waiting for pairing...")
           input (request (str server-url "/api/arena") {:key secret-key})]
       (p (str "Starting arena game " (:viewUrl input)))
+      (browse-url (:viewUrl input))
       (step input)
       (p (str "Finished arena game " (:viewUrl input)))
       (when (< it (read-string games)) (recur (+ it 1))))))
