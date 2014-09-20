@@ -8,10 +8,13 @@
 (defn hero-spawn-pos [input] (:spawnPos (:hero input)))
 (defn hero-id [input] (:id (:hero input)))
 (defn hero-life [input] (:life (:hero input)))
+(defn hero-gold [input] (:gold (:hero input)))
 (defn heroes [input] (into {} (for [[k v] (group-by :id (:heroes (:game input)))] [k (first v)])))
 
 (defn full-health? [input]
   (>= (hero-life input) 99))
+
+(defn money? [input] (> (hero-gold input) 0))
 
 (defn make-return [direction action & ps]
   (prn "make-return" direction action)
@@ -58,7 +61,7 @@
         (make-return (:direction safe-mine) :go-to-mine :destination (:destination safe-mine))))))
 
 (defn go-to-beer [input]
-  (if (not (full-health? input))
+  (if (and (money? input) (not (full-health? input)))
     (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input) (hero-life input) (heroes input))]
       (and safe-beer (make-return (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
