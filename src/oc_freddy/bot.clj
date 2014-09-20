@@ -65,7 +65,6 @@
     (let [safe-beer (closest-safe-beer (board input) (hero-id input) (hero-pos input) (hero-life input) (heroes input))]
       (and safe-beer (make-return (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
-; [board from to hero-id life heroes]
 (defn go-to-spawn [input]
   (let [direction (second (safe-path (board input) (hero-pos input) (hero-spawn-pos input) (hero-id input)
                                      (hero-life input) (heroes input)))]
