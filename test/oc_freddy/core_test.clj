@@ -21,6 +21,7 @@
                wall     beer     air      air      (hero 4) wall
                wall     wall     wall     wall     wall     wall]))
    :size 6})
+(def simple-board-paths (all-paths simple-board))
 
 (deftest safe-coord-test
   (testing "Test safe min coordinates"
@@ -93,37 +94,50 @@
 
 (deftest simple-path-test
   (testing "Same spot test"
-    (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 1))
+    (let [results   (simple-path simple-board-paths (make-pos 1 1) (make-pos 1 1))
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :stay))
       (is (= distance 0))))
   (testing "One step test"
-    (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 2))
+    (let [results   (simple-path simple-board-paths (make-pos 1 1) (make-pos 1 2))
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
       (is (= distance 1))))
   (testing "Two step test"
-    (let [results   (simple-path simple-board (make-pos 1 1) (make-pos 1 3))
+    (let [results   (simple-path simple-board-paths (make-pos 1 1) (make-pos 1 3))
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
       (is (= distance 2))))
   (testing "Around the corner"
-    (let [results   (simple-path simple-board (make-pos 1 2) (make-pos 4 2))
+    (let [results   (simple-path simple-board-paths (make-pos 1 2) (make-pos 4 2))
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
       (is (= distance 7))))
   (testing "Path to mine"
-    (let [results   (simple-path simple-board (make-pos 4 2) (make-pos 2 1))
+    (let [results   (simple-path simple-board-paths (make-pos 4 2) (make-pos 2 1))
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :north))
       (is (= distance 3))))
   (testing "Path to hero"
-    (let [results   (simple-path simple-board (make-pos 3 1) (make-pos 4 4))
+    (let [results   (simple-path simple-board-paths (make-pos 3 1) (make-pos 4 4))
+          distance  (:distance results)
+          direction (:direction results)]
+      (is (= direction :east))
+      (is (= distance 4)))))
+
+(def bigger-board
+  {:tiles (parse-tiles "####    ######            ######    ####$1  $1    ######        ######    $-  $-##          ##    ####    ##          ##                                @4          ##    ##  ##@1[][]  ##  ##    ##          ##        ########        ##      ##  ####      ############      ####  ##  ####            ####            ####    ##    ##                    ##    ##            $1##$-        $-##$-                    $-##$-        $-##$-            ##    ##                    ##    ##    ####            ####            ####  ##  ####      ############      ####  ##      ##        ########        ##          ##@2  ##  ##  [][]  ##  ##    ##                                            ##          ##    ####    ##          ##$-  $2    ######        ######    $3  $-####    ######            ######@3  ####")
+   :size 20})
+(def bigger-board-paths (all-paths bigger-board))
+
+(deftest bigger-board-test
+  (testing "Simple path, bigger board"
+    (let [results   (simple-path bigger-board-paths (make-pos 4 8) (make-pos 15 3))
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
@@ -146,12 +160,12 @@
 
 (deftest closest-test
   (testing "Finding closest beer works"
-    (is (= (:destination (closest-beer simple-board (make-pos 1 1))) (make-pos 2 2)))
-    (is (= (:destination (closest-beer simple-board (make-pos 4 2))) (make-pos 4 1))))
+    (is (= (:destination (closest-beer simple-board simple-board-paths (make-pos 1 1))) (make-pos 2 2)))
+    (is (= (:destination (closest-beer simple-board simple-board-paths (make-pos 4 2))) (make-pos 4 1))))
   (testing "Finding closest capturable mine works"
-    (is (= (:destination (closest-capturable-mine simple-board (make-pos 1 1) 1)) (make-pos 2 1)))
-    (is (= (:destination (closest-capturable-mine simple-board (make-pos 4 3) 1)) (make-pos 2 1)))
-    (is (= (:destination (closest-capturable-mine simple-board (make-pos 4 3) 2)) (make-pos 2 3)))))
+    (is (= (:destination (closest-capturable-mine simple-board simple-board-paths (make-pos 1 1) 1)) (make-pos 2 1)))
+    (is (= (:destination (closest-capturable-mine simple-board simple-board-paths (make-pos 4 3) 1)) (make-pos 2 1)))
+    (is (= (:destination (closest-capturable-mine simple-board simple-board-paths (make-pos 4 3) 2)) (make-pos 2 3)))))
 
 (def hero-board
   {:tiles (to-array

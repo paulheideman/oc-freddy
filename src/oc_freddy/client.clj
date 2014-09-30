@@ -29,7 +29,9 @@
 
 (defn parse-tiles [tiles] (to-array (with-positions (map parse-tile (partition 2 (seq tiles))))))
 
-(defn parse-input [input] (update-in input [:game :board :tiles] parse-tiles))
+(defn parse-input [input]
+  ;(prn input)
+  (update-in input [:game :board :tiles] parse-tiles))
 
 (defn request [url, params]
   "makes a POST request and returns a parsed input"
@@ -48,9 +50,8 @@
 
 (defn step [from]
   (loop [input from
-         state {:start "start"}]
+         state {}]
     (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) "-" (:life (:hero input)) ")  - ")
-    (prn state)
     (let [result    (bot input state)
           dir       (first result)
           new-state (second result)
