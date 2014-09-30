@@ -51,7 +51,7 @@
          state {:start "start"}]
     (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) "-" (:life (:hero input)) ")  - ")
     (prn state)
-    (let [result    (bot input)
+    (let [result    (bot input state)
           dir       (first result)
           new-state (second result)
           next      (request (:playUrl input) {:dir (get dir-map dir "stay")})]

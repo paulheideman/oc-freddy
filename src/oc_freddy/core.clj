@@ -244,3 +244,9 @@
   ([board from unsafe-seq scary-heroes]
     (run-path-search board [(make-node from 0 [])] #{from} #{} unsafe-seq scary-heroes (make-node from 0 []))))
 
+(defn non-wall? [t]
+  (not (= (:tile t) :wall)))
+
+(defn make-graph [board]
+  (let [non-wall-tiles (filter non-wall? (:tiles board))]
+    (add-nodes (digraph) non-wall-tiles)))
