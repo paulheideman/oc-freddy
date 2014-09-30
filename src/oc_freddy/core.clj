@@ -1,6 +1,8 @@
 (ns oc-freddy.core
   (:use [clojure.set :only (union)])
-  (:use [clojure.core.match :only (match)]))
+  (:use [clojure.core.match :only (match)])
+  (:use [loom.graph])
+  (:use [loom.alg-generic :only (bf-path)]))
 
 (def neighbor-directions #{:north, :south, :east, :west})
 
@@ -36,7 +38,7 @@
 (defn tile-at [board pos]
   (aget (:tiles board) (tile-index pos (:size board))))
 
-(defn can-move-to [board pos]
+(defn can-move-to? [board pos]
   (not (= (:tile (tile-at board pos)) :wall)))
 
 (defn stay-in-place? [board pos]
@@ -47,6 +49,8 @@
       :tavern true
       :mine   true
       :hero   false)))
+
+(defn can-move-from? [board pos] (not (stay-in-place? board pos)))
 
 (defn neighbors-of [size pos]
   (filter #(not (= pos %)) (map move (repeat size) (repeat pos) neighbor-directions)))
@@ -81,10 +85,16 @@
 (defn with-pos [node pos]
   (make-node (:pos node) (:score node) (cons pos (:history node))))
 
+(defn direction-from-path [path]
+  (if (< (count (take 2 path)) 2)
+    :stay
+    (apply direction-to (take 2 path))))
+
 (defrecord Route [distance direction destination])
 (defn make-route
   ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
-  ([distance direction position] (Route. distance direction position)))
+  ([distance direction position] (Route. distance direction position))
+  ([path] (make-route (count (drop 1 path)) (direction-from-path path) (last path))))
 
 (defn not-visited? [before pos]
   (not (contains? (set before) pos)))
@@ -98,7 +108,7 @@
             pos            (:pos current)
             score          (:score current)
             before         (:history current)
-            valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to board p) (not-visited? before p)))]
+            valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to? board p) (not-visited? before p)))]
         (if (= pos to) (cons (make-route (distance-from-start current) (first-direction (with-pos current pos)) pos)
                              (all-paths-search board to (rest open) max-distance))
           (if (= max-distance (inc (distance-from-start current)))
@@ -121,8 +131,8 @@
         cs (for [from ps to ps] (vector from to))]
     (into {} (map vector cs (map (partial all-paths-search board) (map first cs) (map second cs))))))
 
-(defn simple-path [paths from to]
-  (first (get paths (vector (make-pos from) (make-pos to)))))
+(defn simple-path [g from to]
+  (make-route (bf-path (successors g) (make-pos from) (make-pos to))))
 
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
@@ -186,7 +196,7 @@
             before         (:history current)
             step           (count before)
             unsafe         (nth unsafe-seq step)
-            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
+            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to? board p) (not (contains? open-added p))))]
         (if (= pos to) (make-route (distance-from-start current) (first-direction (with-pos current pos)) pos)
           (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
             (recur board to
@@ -228,7 +238,7 @@
             before         (:history current)
             step           (count before)
             unsafe         (nth unsafe-seq step)
-            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to board p) (not (contains? open-added p))))]
+            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to? board p) (not (contains? open-added p))))]
         (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
           (recur board
                  (apply insert-into (rest open)
@@ -253,6 +263,16 @@
 (defn non-wall? [t]
   (not (= (:tile t) :wall)))
 
+(defn edge-pairs-for-node [board node]
+  (map vector (repeat node) (filter (partial can-move-to? board) (neighbors-of (:size board) node))))
+
+(defn edge-pairs [board non-wall-nodes]
+  (partition 2
+    (flatten (map (partial edge-pairs-for-node board)
+                  (filter (partial can-move-from? board) non-wall-nodes)))))
+
 (defn make-graph [board]
-  (let [non-wall-tiles (filter non-wall? (:tiles board))]
-    (add-nodes (digraph) non-wall-tiles)))
+  (let [non-wall-tiles (map :pos (filter non-wall? (:tiles board)))]
+    (apply add-edges
+      (apply add-nodes (digraph) non-wall-tiles)
+      (edge-pairs board non-wall-tiles))))
