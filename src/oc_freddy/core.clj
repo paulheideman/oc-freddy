@@ -166,11 +166,11 @@
                 (if (< (or (:distance route) Integer/MAX_VALUE)
                        (or (:distance shortest) Integer/MAX_VALUE)) route shortest)))))))))
 
-(defn closest-beer [board paths pos]
-  (shortest-distance (partial simple-path paths) pos (all-beers board)))
+(defn closest-beer [board g pos]
+  (shortest-distance (partial simple-path g) pos (all-beers board)))
 
-(defn closest-capturable-mine [board paths pos hero-id]
-  (shortest-distance (partial simple-path paths) pos (capturable-mines board hero-id)))
+(defn closest-capturable-mine [board g pos hero-id]
+  (shortest-distance (partial simple-path g) pos (capturable-mines board hero-id)))
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))
@@ -224,8 +224,8 @@
 (defn all-enemies-and-mines [board hero-id]
   (concat (capturable-mines board hero-id) (enemy-locations board hero-id)))
 
-(defn closest-enemy-or-mine [board pos hero-id]
-  (shortest-distance (partial simple-path board) pos (all-enemies-and-mines board hero-id)))
+(defn closest-enemy-or-mine [board g pos hero-id]
+  (shortest-distance (partial simple-path g) pos (all-enemies-and-mines board hero-id)))
 
 (defn run-path-score [heroes pos]
   (if (empty? heroes) 0

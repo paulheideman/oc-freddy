@@ -21,26 +21,26 @@
   (prn "make-return" direction action)
   [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
 
-(defn not-closer-to-beer [input paths h]
-  (> (or (:distance (closest-beer (board input) paths (:pos h))) Integer/MAX_VALUE)
-     (or (:distance (closest-beer (board input) paths (hero-pos input))) Integer/MAX_VALUE)))
+(defn not-closer-to-beer [input g h]
+  (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE)
+     (or (:distance (closest-beer (board input) g (hero-pos input))) Integer/MAX_VALUE)))
 
-(defn within-one? [board paths pos h]
-  (< (or (:distance (simple-path paths pos (:pos h))) Integer/MAX_VALUE) 3))
+(defn within-one? [board g pos h]
+  (< (or (:distance (simple-path g pos (:pos h))) Integer/MAX_VALUE) 3))
 
-(defn not-close-enough-to-beer [input paths h]
-  (< (or (:distance (closest-beer (board input) paths (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
+(defn not-close-enough-to-beer [input g h]
+  (< (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
 
-(defn vulnerable-enemy [input paths h]
+(defn vulnerable-enemy [input g h]
   (and (< (:life h) (- (hero-life input) 20))
-       (or (and (within-one? (board input) paths (hero-pos input) h) (not-close-enough-to-beer input paths h))
-           (not-closer-to-beer input paths h))))
+       (or (and (within-one? (board input) g (hero-pos input) h) (not-close-enough-to-beer input g h))
+           (not-closer-to-beer input g h))))
 
-(defn vulnerable-enemies [input paths]
-  (filter (partial vulnerable-enemy input paths) (vals (heroes input))))
+(defn vulnerable-enemies [input g]
+  (filter (partial vulnerable-enemy input g) (vals (heroes input))))
 
 (defn kill-enemy [input state]
-  (let [targets    (vulnerable-enemies input (:paths state))
+  (let [targets    (vulnerable-enemies input (:graph state))
         paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
@@ -79,7 +79,9 @@
 
 (defn suicide [input state]
   (if (zero? (hero-mine-count input))
-    (make-return state (:direction (closest-enemy-or-mine (board input) (hero-pos input) (hero-id input))) :suicide)))
+    (make-return state (:direction (closest-enemy-or-mine (board input) (:graph state)
+                                                          (hero-pos input) (hero-id input)))
+                       :suicide)))
 
 (defn run [input unsafe-locations scary-enemies state]
     (make-return state (:direction (run-path (board input) (hero-pos input) unsafe-locations scary-enemies)) :run))
@@ -87,7 +89,7 @@
 (defn bot [input state]
   (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
         scary-enemies    (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
-        state            {:paths (get state :paths (all-paths (board input)))}]
+        state            {:graph (get state :graph (make-graph (board input)))}]
     (or (kill-enemy input state)
         (spar-enemy input state)
         (get-full-health input state)
