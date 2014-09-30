@@ -39,8 +39,14 @@
 (defn vulnerable-enemies [input g]
   (filter (partial vulnerable-enemy input g) (vals (heroes input))))
 
+(defn has-mines? [h]
+  (> (:mineCount h) 0))
+
+(defn vulnerable-enemies-with-mines [input g]
+  (filter has-mines? (vulnerable-enemies input g)))
+
 (defn kill-enemy [input state]
-  (let [targets    (vulnerable-enemies input (:graph state))
+  (let [targets    (vulnerable-enemies-with-mines input (:graph state))
         paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
@@ -53,7 +59,7 @@
 
 (defn get-full-health [input state]
   (let [beer (tavern-neighbors input)]
-    (if (and (< (hero-life input) 99) (not (empty? beer)))
+    (if (and (money? input) (< (hero-life input) 99) (not (empty? beer)))
       (make-return state
         (first (map (partial direction-to (hero-pos input))
                     (shuffle beer)))
