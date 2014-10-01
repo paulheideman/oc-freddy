@@ -18,7 +18,7 @@
 (defn money? [input] (> (hero-gold input) 0))
 
 (defn make-return [state direction action & ps]
-  (prn "make-return" direction action)
+  (prn "make-return" direction action ps)
   [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
 
 (defn not-closer-to-beer [input g h]
@@ -31,8 +31,14 @@
 (defn not-close-enough-to-beer [input g h]
   (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
 
+(defn within-spawn-area? [h size]
+  (let [pos       (:pos h)
+        spawn-pos (:spawnPos h)]
+    (or (= pos spawn-pos) (contains? (set (neighbors-of size spawn-pos)) pos))))
+
 (defn vulnerable-enemy [input g h]
   (and (< (:life h) (- (hero-life input) 20))
+       (not (within-spawn-area? h (board-size input)))
        (or (and (within-one? (board input) g (hero-pos input) h) (not-close-enough-to-beer input g h))
            (not-closer-to-beer input g h))))
 
