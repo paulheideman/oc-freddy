@@ -180,6 +180,8 @@
                wall     wall     wall     wall     wall    wall     wall     wall]))
    :size 8})
 
+(def hero-board-graph (make-graph hero-board))
+
 (def full-life-heroes
   {1 {:life 100} 2 {:life 100} 3 {:life 100} 4 {:life 100}})
 
@@ -232,19 +234,17 @@
 
 (deftest run-path-test
   (testing "Cornered"
-    (let [results   (run-path hero-board (make-pos 6 1) 1 10 full-life-heroes)
+    (let [results   (run-path hero-board hero-board-graph (make-pos 6 1) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :stay))))
   (testing "Forced south"
-    (let [results   (run-path hero-board (make-pos 1 1) 1 10 full-life-heroes)
+    (let [results   (run-path hero-board hero-board-graph (make-pos 1 1) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
-      (is (= direction :south))
-      (is (= distance 5))))
+      (is (= direction :south))))
   (testing "Running"
-    (let [results   (run-path hero-board (make-pos 3 1) 1 10 full-life-heroes)
+    (let [results   (run-path hero-board hero-board-graph (make-pos 3 1) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
-      (is (= direction :south))
-      (is (= distance 3)))))
+      (is (= direction :south)))))

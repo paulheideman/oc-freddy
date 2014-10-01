@@ -90,7 +90,7 @@
                        :suicide)))
 
 (defn run [input unsafe-locations scary-enemies state]
-    (make-return state (:direction (run-path (board input) (hero-pos input) unsafe-locations scary-enemies)) :run))
+    (make-return state (:direction (run-path (board input) (:graph state) (hero-pos input) unsafe-locations scary-enemies)) :run))
 
 (defn bot [input state]
   (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))

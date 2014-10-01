@@ -227,11 +227,11 @@
 (defn closest-enemy-or-mine [board g pos hero-id]
   (shortest-distance (partial simple-path g) pos (all-enemies-and-mines board hero-id)))
 
-(defn run-path-score [heroes pos]
+(defn run-path-score [board g heroes pos]
   (if (empty? heroes) 0
-    (- (apply min (map (partial manhattan-distance pos) heroes)))))
+    (+ (:distance (closest-beer board g pos)) (- (apply min (map (partial manhattan-distance pos) heroes))))))
 
-(defn run-path-search [board open open-added closed unsafe-seq heroes best]
+(defn run-path-search [board g open open-added closed unsafe-seq heroes best]
     (if (empty? open) (make-route (distance-from-start best) (first-direction best) (:pos best))
       (let [current        (first open)
             pos            (:pos current)
@@ -240,12 +240,12 @@
             unsafe         (nth unsafe-seq step)
             valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to? board p) (not (contains? open-added p))))]
         (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
-          (recur board
+          (recur board g
                  (apply insert-into (rest open)
                        (map (fn [p]
                                (let [new-pos (if (stay-in-place? board p) pos p)]
                                  (make-node new-pos
-                                           (run-path-score heroes new-pos)
+                                           (run-path-score board g heroes new-pos)
                                            (cons pos before)))) (shuffle neighbors)))
                  (union neighbors open-added)
                  (conj closed pos)
@@ -254,11 +254,11 @@
                  (min-key :score best current))))))
 
 (defn run-path
-  ([board from hero-id life heroes] (run-path board from
-                                              (unsafe-locations board hero-id life heroes)
-                                              (scary-enemy-locations board hero-id life heroes)))
-  ([board from unsafe-seq scary-heroes]
-    (run-path-search board [(make-node from 0 [])] #{from} #{} unsafe-seq scary-heroes (make-node from 0 []))))
+  ([board g from hero-id life heroes] (run-path board g from
+                                                (unsafe-locations board hero-id life heroes)
+                                                (scary-enemy-locations board hero-id life heroes)))
+  ([board g from unsafe-seq scary-heroes]
+    (run-path-search board g [(make-node from 0 [])] #{from} #{} unsafe-seq scary-heroes (make-node from 0 []))))
 
 (defn non-wall? [t]
   (not (= (:tile t) :wall)))
