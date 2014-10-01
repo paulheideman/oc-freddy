@@ -107,6 +107,6 @@
         (get-full-health input state)
         (go-to-mine input unsafe-locations state)
         (go-to-beer input unsafe-locations state)
-        (go-to-spawn input unsafe-locations state)
         (suicide input state)
+        (go-to-spawn input unsafe-locations state)
         (run input unsafe-locations scary-enemies state))))
