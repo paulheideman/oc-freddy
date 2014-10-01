@@ -94,7 +94,7 @@
 (defn make-route
   ([distance-and-direction position] (make-route (first distance-and-direction) (second distance-and-direction) position))
   ([distance direction position] (Route. distance direction position))
-  ([path] (make-route (count (drop 1 path)) (direction-from-path path) (last path))))
+  ([path] (and path (make-route (count (drop 1 path)) (direction-from-path path) (last path)))))
 
 (defn not-visited? [before pos]
   (not (contains? (set before) pos)))

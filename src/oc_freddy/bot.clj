@@ -1,5 +1,6 @@
 (ns oc-freddy.bot
-  (:use [oc-freddy.core]))
+  (:use [oc-freddy.core])
+  (:use [clojure.set :only (intersection)]))
 
 (defn hero-health [input] (:life (:hero input)))
 (defn board [input] (:board (:game input)))
@@ -17,6 +18,11 @@
 
 (defn money? [input] (> (hero-gold input) 0))
 
+(defn within-spawn-area? [h size]
+  (let [pos       (:pos h)
+        spawn-pos (:spawnPos h)]
+    (or (= pos spawn-pos) (contains? (set (neighbors-of size spawn-pos)) pos))))
+
 (defn make-return [state direction action & ps]
   (prn "make-return" direction action ps)
   [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
@@ -31,10 +37,25 @@
 (defn not-close-enough-to-beer [input g h]
   (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
 
-(defn within-spawn-area? [h size]
-  (let [pos       (:pos h)
-        spawn-pos (:spawnPos h)]
-    (or (= pos spawn-pos) (contains? (set (neighbors-of size spawn-pos)) pos))))
+(defn close-to-beer? [input h]
+  (empty? (intersection (set (neighbors-of (board-size input) (:pos h))) (set (all-beers (board input))))))
+
+(defn sparable-enemy [input g h]
+  (and (< (:life h) (+ (hero-life input) 20))
+       (not (within-spawn-area? h (board-size input)))
+       (not (close-to-beer? input h))
+       (<= (get (simple-path g (hero-pos input) (:pos h)) :distance Integer/MAX_VALUE) 2)))
+
+(defn sparable-enemies [input g]
+  (filter (partial sparable-enemy input g) (vals (heroes input))))
+
+(defn spar-enemy [input state]
+  (let [targets (sparable-enemies input (:graph state))
+        paths   (map #(simple-path (:graph state) (hero-pos input) (:pos %)) targets)
+        path    (first paths)]
+    (if-not (empty? path)
+      (make-return state (:direction path) :spar-enemy :target (:destination path)))))
+
 
 (defn vulnerable-enemy [input g h]
   (and (< (:life h) (- (hero-life input) 20))
@@ -71,9 +92,6 @@
                     (shuffle beer)))
         :get-full-health))))
 
-(defn spar-enemy [input state]
-  nil)
-
 (defn go-to-mine [input unsafe-locations state]
   (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) unsafe-locations)]
     (if (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
@@ -102,8 +120,8 @@
   (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
         scary-enemies    (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
         state            {:graph (get state :graph (make-graph (board input)))}]
-    (or (kill-enemy input state)
-        (spar-enemy input state)
+    (or (spar-enemy input state)
+        (kill-enemy input state)
         (get-full-health input state)
         (go-to-mine input unsafe-locations state)
         (go-to-beer input unsafe-locations state)
