@@ -29,7 +29,7 @@
   (< (or (:distance (simple-path g pos (:pos h))) Integer/MAX_VALUE) 3))
 
 (defn not-close-enough-to-beer [input g h]
-  (< (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
+  (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
 
 (defn vulnerable-enemy [input g h]
   (and (< (:life h) (- (hero-life input) 20))
