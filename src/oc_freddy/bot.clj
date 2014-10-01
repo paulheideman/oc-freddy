@@ -31,49 +31,53 @@
   (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE)
      (or (:distance (closest-beer (board input) g (hero-pos input))) Integer/MAX_VALUE)))
 
-(defn within-one? [board g pos h]
-  (< (or (:distance (simple-path g pos (:pos h))) Integer/MAX_VALUE) 3))
+(defn within-one? [board simple-path-func pos h]
+  (< (or (:distance (simple-path-func pos (:pos h))) Integer/MAX_VALUE) 3))
 
 (defn not-close-enough-to-beer [input g h]
   (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
 
-(defn close-to-beer? [input h]
+(defn not-next-to-beer? [input h]
   (empty? (intersection (set (neighbors-of (board-size input) (:pos h))) (set (all-beers (board input))))))
 
-(defn sparable-enemy [input g h]
-  (and (< (:life h) (+ (hero-life input) 20))
-       (not (within-spawn-area? h (board-size input)))
-       (not (close-to-beer? input h))
-       (<= (get (simple-path g (hero-pos input) (:pos h)) :distance Integer/MAX_VALUE) 2)))
+(defn sparable-enemy [input simple-path-func h]
+  (let [sparable-life         (< (:life h) (+ (hero-life input) 20))
+        not-within-spawn-area (not (within-spawn-area? h (board-size input)))
+        not-next-to-beer      (not-next-to-beer? input h)
+        distance              (get (simple-path-func (hero-pos input) (:pos h)) :distance Integer/MAX_VALUE)]
+  (if (= distance 2) (prn "sparable-enemy" h sparable-life not-within-spawn-area not-next-to-beer))
+  (and sparable-life not-within-spawn-area not-next-to-beer
+       (= distance 2))))
 
-(defn sparable-enemies [input g]
-  (filter (partial sparable-enemy input g) (vals (heroes input))))
+(defn sparable-enemies [input simple-path-func]
+  (filter (partial sparable-enemy input simple-path-func) (vals (heroes input))))
 
 (defn spar-enemy [input state]
-  (let [targets (sparable-enemies input (:graph state))
-        paths   (map #(simple-path (:graph state) (hero-pos input) (:pos %)) targets)
+  (let [targets (sparable-enemies input (:simple-path-func state))
+        paths   (map #((:simple-path-func state) (hero-pos input) (:pos %)) targets)
         path    (first paths)]
     (if-not (empty? path)
       (make-return state (:direction path) :spar-enemy :target (:destination path)))))
 
 
-(defn vulnerable-enemy [input g h]
+(defn vulnerable-enemy [input g simple-path-func h]
   (and (< (:life h) (- (hero-life input) 20))
        (not (within-spawn-area? h (board-size input)))
-       (or (and (within-one? (board input) g (hero-pos input) h) (not-close-enough-to-beer input g h))
+       (or (and (within-one? (board input) simple-path-func (hero-pos input) h)
+                (not-close-enough-to-beer input g h))
            (not-closer-to-beer input g h))))
 
-(defn vulnerable-enemies [input g]
-  (filter (partial vulnerable-enemy input g) (vals (heroes input))))
+(defn vulnerable-enemies [input g simple-path-func]
+  (filter (partial vulnerable-enemy input g simple-path-func) (vals (heroes input))))
 
 (defn has-mines? [h]
   (> (:mineCount h) 0))
 
-(defn vulnerable-enemies-with-mines [input g]
-  (filter has-mines? (vulnerable-enemies input g)))
+(defn vulnerable-enemies-with-mines [input g simple-path-func]
+  (filter has-mines? (vulnerable-enemies input g simple-path-func)))
 
 (defn kill-enemy [input state]
-  (let [targets    (vulnerable-enemies-with-mines input (:graph state))
+  (let [targets    (vulnerable-enemies-with-mines input (:graph state) (:simple-path-func state))
         paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
@@ -119,7 +123,9 @@
 (defn bot [input state]
   (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
         scary-enemies    (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
-        state            {:graph (get state :graph (make-graph (board input)))}]
+        graph            (get state :graph (make-graph (board input)))
+        simple-path-func (memoize (fn [from to] (simple-path graph from to)))
+        state            {:graph graph :simple-path-func simple-path-func}]
     (or (spar-enemy input state)
         (kill-enemy input state)
         (get-full-health input state)
