@@ -40,14 +40,17 @@
 (defn not-next-to-beer? [input h]
   (empty? (intersection (set (neighbors-of (board-size input) (:pos h))) (set (all-beers (board input))))))
 
+(defn not-me? [input h]
+  (not (= (hero-id input) (:id h))))
+
 (defn sparable-enemy [input simple-path-func h]
   (let [sparable-life         (< (:life h) (+ (hero-life input) 20))
         enough-life           (> (hero-life input) 20)
         not-within-spawn-area (not (within-spawn-area? h (board-size input)))
         not-next-to-beer      (or (not-next-to-beer? input h) (<= (:life h) 20))
         distance              (get (simple-path-func (hero-pos input) (:pos h)) :distance Integer/MAX_VALUE)]
-  (and sparable-life enough-life not-within-spawn-area not-next-to-beer
-       (<= distance 2))))
+    (and (not-me? input h) sparable-life enough-life not-within-spawn-area not-next-to-beer
+         (<= distance 2))))
 
 (defn sparable-enemies [input simple-path-func]
   (filter (partial sparable-enemy input simple-path-func) (vals (heroes input))))
