@@ -96,43 +96,10 @@
   ([distance direction position] (Route. distance direction position))
   ([path] (and path (make-route (count (drop 1 path)) (direction-from-path path) (last path)))))
 
-(defn not-visited? [before pos]
-  (not (contains? (set before) pos)))
-
-(defn all-paths-search
-  ([board from to]
-    (lazy-seq (all-paths-search board (make-pos to) [(make-node from 0 [])] (* 2 (:size board)))))
-  ([board to open max-distance]
-    (if (empty? open) []
-      (let [current        (first open)
-            pos            (:pos current)
-            score          (:score current)
-            before         (:history current)
-            valid-neighbor (fn [p] (and (not (= p pos)) (can-move-to? board p) (not-visited? before p)))]
-        (if (= pos to) (cons (make-route (distance-from-start current) (first-direction (with-pos current pos)) pos)
-                             (all-paths-search board to (rest open) max-distance))
-          (if (= max-distance (inc (distance-from-start current)))
-            (recur board to (rest open) max-distance)
-            (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
-              (recur board to
-                    (apply insert-into (rest open)
-                            (map (fn [p]
-                                    (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
-                                      (make-node new-pos
-                                                (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
-                                                (cons pos before)))) (shuffle neighbors)))
-                    max-distance))))))))
-
-(defn non-wall-tiles [board]
-  (map :pos (filter (comp not (partial = :wall) :tile) (:tiles board))))
-
-(defn all-paths [board]
-  (let [ps (non-wall-tiles board)
-        cs (for [from ps to ps] (vector from to))]
-    (into {} (map vector cs (map (partial all-paths-search board) (map first cs) (map second cs))))))
-
 (defn simple-path [g from to]
-  (make-route (bf-path (successors g) (make-pos from) (make-pos to))))
+  (if (= from to)
+    (make-route 0 :stay to)
+    (make-route (bf-path (successors g) (make-pos from) (make-pos to)))))
 
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
