@@ -45,7 +45,7 @@
 
 (defn sparable-enemy [input simple-path-func h]
   (let [sparable-life         (< (:life h) (+ (hero-life input) 20))
-        enough-life           (> (hero-life input) 20)
+        enough-life           (or (> (hero-life input) 20) (<= (hero-life input) 20))
         not-within-spawn-area (not (within-spawn-area? h (board-size input)))
         not-next-to-beer      (or (not-next-to-beer? input h) (<= (:life h) 20))
         distance              (get (simple-path-func (hero-pos input) (:pos h)) :distance Integer/MAX_VALUE)]
