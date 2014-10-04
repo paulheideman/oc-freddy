@@ -116,7 +116,7 @@
 
 (defn suicide [input state]
   (if (zero? (hero-mine-count input))
-    (make-return state (:direction (closest-enemy-or-mine (board input) (:graph state)
+    (make-return state (:direction (closest-enemy-or-mine (board input) (:simple-path-func state)
                                                           (hero-pos input) (hero-id input)))
                        :suicide)))
 

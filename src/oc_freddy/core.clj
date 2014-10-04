@@ -191,8 +191,8 @@
 (defn all-enemies-and-mines [board hero-id]
   (concat (capturable-mines board hero-id) (enemy-locations board hero-id)))
 
-(defn closest-enemy-or-mine [board g pos hero-id]
-  (shortest-distance (partial simple-path g) pos (all-enemies-and-mines board hero-id)))
+(defn closest-enemy-or-mine [board path-func pos hero-id]
+  (shortest-distance path-func pos (all-enemies-and-mines board hero-id)))
 
 (defn run-path-score [board g heroes pos]
   (if (empty? heroes) 0
