@@ -104,6 +104,9 @@
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
 
+(defn air? [board pos]
+  (= (:tile (tile-at board pos)) :air))
+
 (defn capturable-mines [board hero-id]
   (map :pos
     (filter #(and (= (:tile %) :mine) (not (= (:of %) hero-id)))
@@ -194,38 +197,14 @@
 (defn closest-enemy-or-mine [board path-func pos hero-id]
   (shortest-distance path-func pos (all-enemies-and-mines board hero-id)))
 
-(defn run-path-score [board g heroes pos]
-  (if (empty? heroes) 0
-    (+ (:distance (closest-beer board (partial simple-path g) pos)) (- (apply min (map (partial manhattan-distance pos) heroes))))))
-
-(defn run-path-search [board g open open-added closed unsafe-seq heroes best]
-    (if (empty? open) (make-route (distance-from-start best) (first-direction best) (:pos best))
-      (let [current        (first open)
-            pos            (:pos current)
-            before         (:history current)
-            step           (count before)
-            unsafe         (nth unsafe-seq step)
-            valid-neighbor (fn [p] (and (not (contains? unsafe pos)) (not (= p pos)) (can-move-to? board p) (not (contains? open-added p))))]
-        (let [neighbors (set (filter valid-neighbor (neighbors-of (:size board) pos)))]
-          (recur board g
-                 (apply insert-into (rest open)
-                       (map (fn [p]
-                               (let [new-pos (if (stay-in-place? board p) pos p)]
-                                 (make-node new-pos
-                                           (run-path-score board g heroes new-pos)
-                                           (cons pos before)))) (shuffle neighbors)))
-                 (union neighbors open-added)
-                 (conj closed pos)
-                 unsafe-seq
-                 heroes
-                 (min-key :score best current))))))
-
-(defn run-path
-  ([board g from hero-id life heroes] (run-path board g from
-                                                (unsafe-locations board hero-id life heroes)
-                                                (scary-enemy-locations board hero-id life heroes)))
-  ([board g from unsafe-seq scary-heroes]
-    (run-path-search board g [(make-node from 0 [])] #{from} #{} unsafe-seq scary-heroes (make-node from 0 []))))
+(defn run-direction [board simple-path-func pos scary-pos]
+  (let [ps                       (cons pos (filter (partial air? board) (neighbors-of (:size board) pos)))
+        far-enough-away?         (fn [p] (> (or (:distance
+                                    (shortest-distance simple-path-func p scary-pos)) Integer/MAX_VALUE) 2))
+        distance-to-beer         (comp :distance (partial closest-beer board simple-path-func))
+        suitable-ps              (filter far-enough-away? ps)]
+    (if (empty? suitable-ps) :stay
+      (direction-to pos (apply min-key distance-to-beer suitable-ps)))))
 
 (defn non-wall? [t]
   (not (= (:tile t) :wall)))

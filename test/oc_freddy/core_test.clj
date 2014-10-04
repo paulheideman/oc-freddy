@@ -232,20 +232,3 @@
   (testing "Not safe path"
     (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 1 5) 1 10 full-life-heroes)]
       (is (nil? results)))))
-
-(deftest run-path-test
-  (testing "Cornered"
-    (let [results   (run-path hero-board hero-board-graph (make-pos 6 1) 1 10 full-life-heroes)
-          distance  (:distance results)
-          direction (:direction results)]
-      (is (= direction :stay))))
-  (testing "Forced south"
-    (let [results   (run-path hero-board hero-board-graph (make-pos 1 1) 1 10 full-life-heroes)
-          distance  (:distance results)
-          direction (:direction results)]
-      (is (= direction :south))))
-  (testing "Running"
-    (let [results   (run-path hero-board hero-board-graph (make-pos 3 1) 1 10 full-life-heroes)
-          distance  (:distance results)
-          direction (:direction results)]
-      (is (= direction :south)))))
