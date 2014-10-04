@@ -133,11 +133,11 @@
                 (if (< (or (:distance route) Integer/MAX_VALUE)
                        (or (:distance shortest) Integer/MAX_VALUE)) route shortest)))))))))
 
-(defn closest-beer [board g pos]
-  (shortest-distance (partial simple-path g) pos (all-beers board)))
+(defn closest-beer [board simple-path-func pos]
+  (shortest-distance simple-path-func pos (all-beers board)))
 
-(defn closest-capturable-mine [board g pos hero-id]
-  (shortest-distance (partial simple-path g) pos (capturable-mines board hero-id)))
+(defn closest-capturable-mine [board simple-path-func pos hero-id]
+  (shortest-distance simple-path-func pos (capturable-mines board hero-id)))
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))
@@ -196,7 +196,7 @@
 
 (defn run-path-score [board g heroes pos]
   (if (empty? heroes) 0
-    (+ (:distance (closest-beer board g pos)) (- (apply min (map (partial manhattan-distance pos) heroes))))))
+    (+ (:distance (closest-beer board (partial simple-path g) pos)) (- (apply min (map (partial manhattan-distance pos) heroes))))))
 
 (defn run-path-search [board g open open-added closed unsafe-seq heroes best]
     (if (empty? open) (make-route (distance-from-start best) (first-direction best) (:pos best))

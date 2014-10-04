@@ -22,6 +22,7 @@
                wall     wall     wall     wall     wall     wall]))
    :size 6})
 (def simple-board-graph (make-graph simple-board))
+(def simple-board-path-func (partial simple-path simple-board-graph))
 
 (deftest safe-coord-test
   (testing "Test safe min coordinates"
@@ -160,12 +161,12 @@
 
 (deftest closest-test
   (testing "Finding closest beer works"
-    (is (= (:destination (closest-beer simple-board simple-board-graph (make-pos 1 1))) (make-pos 2 2)))
-    (is (= (:destination (closest-beer simple-board simple-board-graph (make-pos 4 2))) (make-pos 4 1))))
+    (is (= (:destination (closest-beer simple-board simple-board-path-func (make-pos 1 1))) (make-pos 2 2)))
+    (is (= (:destination (closest-beer simple-board simple-board-path-func (make-pos 4 2))) (make-pos 4 1))))
   (testing "Finding closest capturable mine works"
-    (is (= (:destination (closest-capturable-mine simple-board simple-board-graph (make-pos 1 1) 1)) (make-pos 2 1)))
-    (is (= (:destination (closest-capturable-mine simple-board simple-board-graph (make-pos 4 3) 1)) (make-pos 2 1)))
-    (is (= (:destination (closest-capturable-mine simple-board simple-board-graph (make-pos 4 3) 2)) (make-pos 2 3)))))
+    (is (= (:destination (closest-capturable-mine simple-board simple-board-path-func (make-pos 1 1) 1)) (make-pos 2 1)))
+    (is (= (:destination (closest-capturable-mine simple-board simple-board-path-func (make-pos 4 3) 1)) (make-pos 2 1)))
+    (is (= (:destination (closest-capturable-mine simple-board simple-board-path-func (make-pos 4 3) 2)) (make-pos 2 3)))))
 
 (def hero-board
   {:tiles (to-array

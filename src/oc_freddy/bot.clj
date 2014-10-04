@@ -27,15 +27,15 @@
   (prn "make-return" direction action ps)
   [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
 
-(defn not-closer-to-beer [input g h]
-  (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE)
-     (or (:distance (closest-beer (board input) g (hero-pos input))) Integer/MAX_VALUE)))
+(defn not-closer-to-beer [input path-func h]
+  (> (or (:distance (closest-beer (board input) path-func (:pos h))) Integer/MAX_VALUE)
+     (or (:distance (closest-beer (board input) path-func (hero-pos input))) Integer/MAX_VALUE)))
 
 (defn within-one? [board simple-path-func pos h]
   (< (or (:distance (simple-path-func pos (:pos h))) Integer/MAX_VALUE) 3))
 
-(defn not-close-enough-to-beer [input g h]
-  (> (or (:distance (closest-beer (board input) g (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
+(defn not-close-enough-to-beer [input path-func h]
+  (> (or (:distance (closest-beer (board input) path-func (:pos h))) Integer/MAX_VALUE) (/ (:life h) 20)))
 
 (defn not-next-to-beer? [input h]
   (empty? (intersection (set (neighbors-of (board-size input) (:pos h))) (set (all-beers (board input))))))
@@ -63,24 +63,24 @@
       (make-return state (:direction path) :spar-enemy :target (:destination path)))))
 
 
-(defn vulnerable-enemy [input g simple-path-func h]
+(defn vulnerable-enemy [input simple-path-func h]
   (and (< (:life h) (- (hero-life input) 20))
        (not (within-spawn-area? h (board-size input)))
        (or (and (within-one? (board input) simple-path-func (hero-pos input) h)
-                (not-close-enough-to-beer input g h))
-           (not-closer-to-beer input g h))))
+                (not-close-enough-to-beer input simple-path-func h))
+           (not-closer-to-beer input simple-path-func h))))
 
-(defn vulnerable-enemies [input g simple-path-func]
-  (filter (partial vulnerable-enemy input g simple-path-func) (vals (heroes input))))
+(defn vulnerable-enemies [input simple-path-func]
+  (filter (partial vulnerable-enemy input simple-path-func) (vals (heroes input))))
 
 (defn has-mines? [h]
   (> (:mineCount h) 0))
 
-(defn vulnerable-enemies-with-mines [input g simple-path-func]
-  (filter has-mines? (vulnerable-enemies input g simple-path-func)))
+(defn vulnerable-enemies-with-mines [input simple-path-func]
+  (filter has-mines? (vulnerable-enemies input simple-path-func)))
 
 (defn kill-enemy [input state]
-  (let [targets    (vulnerable-enemies-with-mines input (:graph state) (:simple-path-func state))
+  (let [targets    (vulnerable-enemies-with-mines input (:simple-path-func state))
         paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
