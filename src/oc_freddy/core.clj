@@ -197,14 +197,19 @@
 (defn closest-enemy-or-mine [board path-func pos hero-id]
   (shortest-distance path-func pos (all-enemies-and-mines board hero-id)))
 
-(defn run-direction [board simple-path-func pos scary-pos]
-  (let [ps                       (cons pos (filter (partial air? board) (neighbors-of (:size board) pos)))
-        far-enough-away?         (fn [p] (> (or (:distance
+(defn closest-beer-or-spawn-area [board path-func spawn-pos pos]
+  (shortest-distance path-func pos
+                     (concat (filter (partial air? board) (neighbors-of (:size board) spawn-pos))
+                             (all-beers board))))
+
+(defn run-direction [board simple-path-func pos scary-pos spawn-pos]
+  (let [ps                        (cons pos (filter (partial air? board) (neighbors-of (:size board) pos)))
+        far-enough-away?          (fn [p] (> (or (:distance
                                     (shortest-distance simple-path-func p scary-pos)) Integer/MAX_VALUE) 2))
-        distance-to-beer         (comp :distance (partial closest-beer board simple-path-func))
-        suitable-ps              (filter far-enough-away? ps)]
+        distance-to-beer-or-spawn (comp :distance (partial closest-beer-or-spawn-area board simple-path-func spawn-pos))
+        suitable-ps               (filter far-enough-away? ps)]
     (if (empty? suitable-ps) :stay
-      (direction-to pos (apply min-key distance-to-beer suitable-ps)))))
+      (direction-to pos (apply min-key distance-to-beer-or-spawn suitable-ps)))))
 
 (defn non-wall? [t]
   (not (= (:tile t) :wall)))

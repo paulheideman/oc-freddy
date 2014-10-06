@@ -24,7 +24,7 @@
     (or (= pos spawn-pos) (contains? (set (neighbors-of size spawn-pos)) pos))))
 
 (defn make-return [state direction action & ps]
-  (prn "make-return" direction action ps)
+  (prn direction action ps)
   [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
 
 (defn not-closer-to-beer [input path-func h]
@@ -110,10 +110,6 @@
     (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations)]
       (and safe-beer (make-return state (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
-(defn go-to-spawn [input unsafe-locations state]
-  (let [direction (:direction (safe-path (board input) unsafe-locations (hero-pos input) (hero-spawn-pos input)))]
-    (and direction (make-return state direction :go-to-spawn))))
-
 (defn suicide [input state]
   (if (zero? (hero-mine-count input))
     (make-return state (:direction (closest-enemy-or-mine (board input) (:simple-path-func state)
@@ -121,7 +117,10 @@
                        :suicide)))
 
 (defn run [input scary-enemies state]
-    (make-return state (run-direction (board input) (:simple-path-func state) (hero-pos input) scary-enemies) :run))
+    (make-return state
+                 (run-direction (board input) (:simple-path-func state)
+                                (hero-pos input) scary-enemies (hero-spawn-pos input))
+                 :run))
 
 (defn bot [input state]
   (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
@@ -135,5 +134,4 @@
         (go-to-mine input unsafe-locations state)
         (go-to-beer input unsafe-locations state)
         (suicide input state)
-        (go-to-spawn input unsafe-locations state)
         (run input scary-enemies state))))
