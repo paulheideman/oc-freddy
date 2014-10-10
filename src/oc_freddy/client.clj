@@ -61,7 +61,7 @@
 (defn training [secret-key turns]
   (let [input (request (str server-url "/api/training") {:key secret-key :turns turns})]
     (println (str "Starting training game " (:viewUrl input)))
-    (browse-url (:viewUrl input))
+    (browse-url (str (:viewUrl input) "?speed=max"))
     (step input)
     (println (str "Finished training game " (:viewUrl input)))))
 
@@ -71,7 +71,7 @@
           _ (p "Waiting for pairing...")
           input (request (str server-url "/api/arena") {:key secret-key})]
       (p (str "Starting arena game " (:viewUrl input)))
-      (browse-url (:viewUrl input))
+      (browse-url (str (:viewUrl input) "?speed=max"))
       (step input)
       (p (str "Finished arena game " (:viewUrl input)))
       (when (< it (read-string games)) (recur (+ it 1))))))
