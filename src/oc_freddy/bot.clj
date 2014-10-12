@@ -87,7 +87,8 @@
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
     (if-not (empty? path)
-      (make-return state (:direction path) :kill-enemy :target (:destination path)))))
+      (if (<= (:distance path) (:size (board input)))
+        (make-return state (:direction path) :kill-enemy :target (:destination path))))))
 
 (defn tavern-neighbors [input]
   (map :pos (filter #(= (:tile %) :tavern)
