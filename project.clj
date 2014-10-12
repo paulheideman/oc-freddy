@@ -8,6 +8,7 @@
                  [cheshire "5.3.1"]
                  [slingshot "0.10.3"]
                  [aysylu/loom "0.5.0"]
+                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [org.clojure/core.match "0.2.1"]]
   :main ^:skip-aot oc-freddy.client
   :jvm-opts ["-Xmx2g" "-server"]

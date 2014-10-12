@@ -5,7 +5,8 @@
   (:use [slingshot.slingshot :only [try+, throw+]])
   (:use [clojure.set :only (union)])
   (:use [clojure.java.browse :only (browse-url)])
-  (:use [clojure.core.match :only (match)]))
+  (:use [clojure.core.match :only (match)])
+  (:use [clojure.core.async :only (go)]))
 
 (require '[clj-http.client :as http])
 
@@ -61,7 +62,7 @@
 (defn training [secret-key turns]
   (let [input (request (str server-url "/api/training") {:key secret-key :turns turns})]
     (println (str "Starting training game " (:viewUrl input)))
-    (browse-url (str (:viewUrl input) "?speed=max"))
+    (go (browse-url (str (:viewUrl input) "?speed=max")))
     (step input)
     (println (str "Finished training game " (:viewUrl input)))))
 
