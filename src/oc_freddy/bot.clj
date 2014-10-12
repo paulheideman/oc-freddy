@@ -12,6 +12,7 @@
 (defn hero-gold [input] (:gold (:hero input)))
 (defn hero-mine-count [input] (:mineCount (:hero input)))
 (defn heroes [input] (into {} (for [[k v] (group-by :id (:heroes (:game input)))] [k (first v)])))
+(defn heroes-without-me [input] (dissoc (heroes input) (hero-id input)))
 
 (defn full-health? [input]
   (>= (hero-life input) 99))
@@ -100,9 +101,18 @@
                     (shuffle beer)))
         :get-full-health))))
 
+(defn enemy-can-strike? [pos life simple-path-func h]
+  (and (>= (:life h) (- life 20))
+       (= (or (:distance (simple-path-func pos (:pos h))) Integer/MAX_VALUE) 2)))
+
+(defn enemies-can-strike? [pos life simple-path-func heroes]
+  (not (empty? (filter (partial enemy-can-strike? pos life simple-path-func) (vals heroes)))))
+
 (defn go-to-mine [input unsafe-locations state]
   (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) unsafe-locations)]
-    (if (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
+    (if (and (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
+             (not (enemies-can-strike? (hero-pos input) (hero-life input)
+                                       (:simple-path-func state) (heroes-without-me input))))
       (and safe-mine
         (make-return state (:direction safe-mine) :go-to-mine :destination (:destination safe-mine))))))
 
