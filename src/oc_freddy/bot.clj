@@ -87,8 +87,13 @@
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
     (if-not (empty? path)
-      (if (<= (:distance path) (:size (board input)))
-        (make-return state (:direction path) :kill-enemy :target (:destination path))))))
+      (if (< (hero-life input) 80)
+        (if (<= (:distance path) (Math/sqrt (:size (board input))))
+          (make-return state (:direction path) :kill-enemy
+                       :target (:destination path) :criteria :easy-kill))
+        (if (<= (:distance path) (:size (board input)))
+          (make-return state (:direction path) :kill-enemy 
+                       :target (:destination path) :criteria :ready-to-kill))))))
 
 (defn tavern-neighbors [input]
   (map :pos (filter #(= (:tile %) :tavern)
@@ -96,7 +101,7 @@
 
 (defn get-full-health [input state]
   (let [beer (tavern-neighbors input)]
-    (if (and (money? input) (< (hero-life input) 99) (not (empty? beer)))
+    (if (and (money? input) (<= (hero-life input) 80) (not (empty? beer)))
       (make-return state
         (first (map (partial direction-to (hero-pos input))
                     (shuffle beer)))
