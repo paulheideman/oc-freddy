@@ -25,7 +25,8 @@
 
 (defn make-return [state direction action & ps]
   (prn direction action ps)
-  [direction (into {:action action} (map (partial apply vector) (partition 2 ps)))])
+  [direction (into (into state [[:action action]])
+                   (map (partial apply vector) (partition 2 ps)))])
 
 (defn not-closer-to-beer [input path-func h]
   (> (or (:distance (closest-beer (board input) path-func (:pos h))) Integer/MAX_VALUE)
@@ -122,16 +123,32 @@
                                 (hero-pos input) scary-enemies (hero-spawn-pos input))
                  :run))
 
+(defn all-same? [p & ps]
+  (every? (partial = p) ps))
+
+(defn break-loop [state]
+  (let [previous-locations (:previous-locations state)]
+    (if (> (count previous-locations) 10)
+      (loop [i 1]
+        (if (<= i 5)
+          (if (apply all-same? (take (/ 10 i) (partition i previous-locations)))
+            (make-return state (first (shuffle neighbor-directions)) :break-loop)
+            (recur (inc i))))))))
+
 (defn bot [input state]
-  (let [unsafe-locations (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
-        scary-enemies    (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
-        graph            (get state :graph (make-graph (board input)))
-        simple-path-func (memoize (fn [from to] (simple-path graph from to)))
-        state            {:graph graph :simple-path-func simple-path-func}]
-    (or (spar-enemy input state)
-        (kill-enemy input state)
-        (get-full-health input state)
-        (go-to-mine input unsafe-locations state)
-        (go-to-beer input unsafe-locations state)
-        (suicide input state)
-        (run input scary-enemies state))))
+  (let [unsafe-locations   (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
+        scary-enemies      (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
+        graph              (get state :graph (make-graph (board input)))
+        simple-path-func   (memoize (fn [from to] (simple-path graph from to)))
+        previous-locations (cons (hero-pos input) (get state :previous-locations []))
+        next-state         {:graph              graph
+                            :simple-path-func   simple-path-func
+                            :previous-locations previous-locations}]
+    (or (break-loop next-state)
+        (spar-enemy input next-state)
+        (kill-enemy input next-state)
+        (get-full-health input next-state)
+        (go-to-mine input unsafe-locations next-state)
+        (go-to-beer input unsafe-locations next-state)
+        (suicide input next-state)
+        (run input scary-enemies next-state))))
