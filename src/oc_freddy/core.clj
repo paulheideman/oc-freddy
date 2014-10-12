@@ -229,11 +229,14 @@
 
 (defn run-direction [board simple-path-func pos scary-pos spawn-pos]
   (let [ps                        (cons pos (filter (partial air? board) (neighbors-of (:size board) pos)))
-        far-enough-away?          (fn [p] (> (or (:distance
-                                    (shortest-distance simple-path-func p scary-pos)) Integer/MAX_VALUE) 2))
+        far-enough-away?          (fn [d p] (> (or (:distance
+                                    (shortest-distance simple-path-func p scary-pos)) Integer/MAX_VALUE) d))
         distance-to-beer-or-spawn (comp :distance (partial closest-beer-or-spawn-area board simple-path-func spawn-pos))
-        suitable-ps               (filter far-enough-away? ps)]
-    (if (empty? suitable-ps) :stay
+        suitable-ps               (filter (partial far-enough-away? 2) ps)
+        semi-suitable-ps          (filter (partial far-enough-away? 1) ps)]
+    (if (empty? suitable-ps)
+      (if (empty? semi-suitable-ps) :stay
+        (direction-to pos (apply min-key distance-to-beer-or-spawn semi-suitable-ps)))
       (direction-to pos (apply min-key distance-to-beer-or-spawn suitable-ps)))))
 
 (defn non-wall? [t]
