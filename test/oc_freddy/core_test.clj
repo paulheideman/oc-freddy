@@ -184,7 +184,10 @@
 (def hero-board-graph (make-graph hero-board))
 
 (def full-life-heroes
-  {1 {:life 100} 2 {:life 100} 3 {:life 100} 4 {:life 100}})
+  {1 {:id 1 :life 100 :spawnPos {:x 1 :y 1}}
+   2 {:id 2 :life 100 :spawnPos {:x 2 :y 2}}
+   3 {:id 3 :life 100 :spawnPos {:x 6 :y 6}}
+   4 {:id 4 :life 100 :spawnPos {:x 5 :y 5}}})
 
 (deftest unsafe-locations-test
   (testing "Unsafe locations works"
@@ -232,3 +235,14 @@
   (testing "Not safe path"
     (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 1 5) 1 10 full-life-heroes)]
       (is (nil? results)))))
+
+(deftest unsafe-spawn-locations-test
+  (testing "No heroes"
+    (let [location-seq (unsafe-spawn-locations {} 1)]
+      (is (empty? (first location-seq)))))
+  (testing "Full heroes"
+    (let [location-seq (unsafe-spawn-locations full-life-heroes 1)]
+      (is (empty? (first location-seq)))
+      (is (contains? (set (nth location-seq 3)) (make-pos 2 2)))
+      (is (contains? (set (nth location-seq 3)) (make-pos 6 6)))
+      (is (contains? (set (nth location-seq 3)) (make-pos 5 5))))))

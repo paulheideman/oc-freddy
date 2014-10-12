@@ -148,16 +148,37 @@
 (defn mine-belongs-to-hero? [board pos hero-id]
   (= (:of (tile-at board pos)) hero-id))
 
+(defn spawn-location-and-life [heroes]
+  (into {} (map (fn [h] [(make-pos (:spawnPos h)) (:life h)]) heroes)))
+
+(defn less-one-hit [spawn-life-map]
+  (into {} (for [[k v] spawn-life-map] [k (- v 20)])))
+
+(defn not-me? [hero-id h]
+  (not (= (:id h) hero-id)))
+
+(defn unsafe-spawn-locations
+  ([heroes hero-id] (lazy-seq (unsafe-spawn-locations
+                      (less-one-hit (spawn-location-and-life (filter (partial not-me? hero-id) (vals heroes)))))))
+  ([spawn-life-map]
+    (if (empty? spawn-life-map) []
+      (let [dangerous-spawn-locs (for [[s l] (filter #(<= (second %) 20) spawn-life-map)] s)]
+        (lazy-seq (cons dangerous-spawn-locs
+                  (unsafe-spawn-locations (less-one-hit (apply dissoc spawn-life-map dangerous-spawn-locs)))))))))
+
 (defn unsafe-locations
   ([board hero-id life heroes]
     (let [can-move-from-neighbors (fn [pos] (filter #(not (stay-in-place? board %))
                                                           (neighbors-of (:size board) pos)))
-          starting-locations      (scary-enemy-locations board hero-id life heroes)]
+          scary-spawn-locations   (unsafe-spawn-locations heroes hero-id)
+          starting-locations      (concat (scary-enemy-locations board hero-id life heroes) 
+                                          (first scary-spawn-locations))]
       (unsafe-locations can-move-from-neighbors
-                        (set (union starting-locations (mapcat can-move-from-neighbors starting-locations))))))
-  ([can-move-from-neighbors previous]
-    (let [new-set (union previous (set (mapcat can-move-from-neighbors previous)))]
-      (lazy-seq (cons new-set (unsafe-locations can-move-from-neighbors new-set))))))
+                        (set (union starting-locations (mapcat can-move-from-neighbors starting-locations)))
+                        (rest scary-spawn-locations))))
+  ([can-move-from-neighbors previous scary-spawn-locations]
+    (let [new-set (union previous (set (mapcat can-move-from-neighbors (concat previous (first scary-spawn-locations)))))]
+      (lazy-seq (cons new-set (unsafe-locations can-move-from-neighbors new-set (rest scary-spawn-locations)))))))
 
 (defn safe-path-search [board to open open-added closed unsafe-seq]
     (if (empty? open) nil ; no path found
