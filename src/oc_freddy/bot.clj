@@ -6,7 +6,7 @@
 (defn board [input] (:board (:game input)))
 (defn board-size [input] (:size (board input)))
 (defn hero-pos [input] (:pos (:hero input)))
-(defn hero-spawn-pos [input] (:spawnPos (:hero input)))
+(defn hero-spawn-pos [input] (make-pos (:spawnPos (:hero input))))
 (defn hero-id [input] (:id (:hero input)))
 (defn hero-life [input] (:life (:hero input)))
 (defn hero-gold [input] (:gold (:hero input)))
@@ -146,6 +146,32 @@
             (make-return state (first (shuffle neighbor-directions)) :break-loop)
             (recur (inc i))))))))
 
+(defn next-to-unowned-mine? [input state]
+  (= (or (:distance (closest-capturable-mine (board input) (:simple-path-func state)
+                                             (hero-pos input) (hero-id input))) Integer/MAX_VALUE) 1))
+
+(defn on-position? [pos h]
+  (= (:pos h) pos))
+
+(defn on-spawn-position? [input h]
+  (on-position? (hero-spawn-pos input) h))
+
+(defn has-more-mines-than-me? [input h]
+  (> (:mineCount h) (hero-mine-count input)))
+
+(defn someone-on-my-spawn? [input state]
+  (filter (partial on-spawn-position? input) (vals (heroes input))))
+
+(defn someone-on-my-spawn-with-more-mines-than-me? [input state]
+  (not (empty? (filter (partial has-more-mines-than-me? input) (someone-on-my-spawn? input state)))))
+
+(defn telefrag [input state]
+  (if (and (<= (hero-life input) 20)
+           (next-to-unowned-mine? input state)
+           (someone-on-my-spawn-with-more-mines-than-me? input state))
+    (make-return state (:direction (closest-capturable-mine (board input) (:simple-path-func state)
+                                                            (hero-pos input) (hero-id input))) :telefrag)))
+
 (defn bot [input state]
   (let [unsafe-locations   (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
         scary-enemies      (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
@@ -155,7 +181,8 @@
         next-state         {:graph              graph
                             :simple-path-func   simple-path-func
                             :previous-locations previous-locations}]
-    (or (break-loop next-state)
+    (or (telefrag input next-state)
+        (break-loop next-state)
         (spar-enemy input next-state)
         (kill-enemy input next-state)
         (get-full-health input next-state)
