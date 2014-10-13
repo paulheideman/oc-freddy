@@ -15,7 +15,7 @@
 (defn heroes-without-me [input] (dissoc (heroes input) (hero-id input)))
 
 (defn full-health? [input]
-  (>= (hero-life input) 99))
+  (>= (hero-life input) 80))
 
 (defn money? [input] (> (hero-gold input) 0))
 
@@ -109,7 +109,7 @@
 
 (defn enemy-can-strike? [pos life simple-path-func h]
   (and (>= (:life h) (- life 20))
-       (= (or (:distance (simple-path-func pos (:pos h))) Integer/MAX_VALUE) 2)))
+       (<= (or (:distance (simple-path-func pos (:pos h))) Integer/MAX_VALUE) 2)))
 
 (defn enemies-can-strike? [pos life simple-path-func heroes]
   (not (empty? (filter (partial enemy-can-strike? pos life simple-path-func) (vals heroes)))))
@@ -127,11 +127,21 @@
     (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations)]
       (and safe-beer (make-return state (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
+(defn next-to-unowned-mine [input state]
+  (= (or (:distance (closest-capturable-mine (board input) (:simple-path-func state)
+                                             (hero-pos input) (hero-id input))) Integer/MAX_VALUE) 1))
+
 (defn suicide [input state]
   (if (zero? (hero-mine-count input))
     (make-return state (:direction (closest-enemy-or-mine (board input) (:simple-path-func state)
                                                           (hero-pos input) (hero-id input)))
-                       :suicide)))
+                       :suicide)
+    (if (and (<= (hero-life input) 20)
+             (enemies-can-strike? (hero-pos input) (hero-life input)
+                                  (:simple-path-func state) (heroes-without-me input))
+             (next-to-unowned-mine input state))
+      (make-return state (:direction (closest-capturable-mine (board input) (:simple-path-func state)
+                                                              (hero-pos input) (hero-id input))) :suicide))))
 
 (defn run [input scary-enemies state]
     (make-return state
@@ -177,6 +187,43 @@
     (make-return state (:direction (closest-capturable-mine (board input) (:simple-path-func state)
                                                             (hero-pos input) (hero-id input))) :telefrag)))
 
+(defn remaining-turns [input]
+  (- 300 (/ (:turn (:game input)) 4)))
+
+(defn distance-to-mines [board simple-path-func h]
+  (map (comp :distance (partial simple-path-func (make-pos (:pos h)))) (capturable-mines board (:id h))))
+
+(defn predicted-end-score [input simple-path-func turns h]
+  (let [ds                       (distance-to-mines (board input) simple-path-func h)
+        current-mine-count       (:mineCount h)
+        average-mine-distance    (if (zero? (count ds)) 1 (/ (apply + ds) (count ds)))
+        predicted-end-mine-count (if (empty? ds) current-mine-count
+                                   (if (= (hero-id input) (:id h))
+                                     (max (- current-mine-count (/ turns average-mine-distance)) 0)
+                                     (min (+ current-mine-count (/ turns average-mine-distance))
+                                          (count (all-mines (board input))))))
+        average-mine-count       (/ (+ current-mine-count predicted-end-mine-count) 2)]
+    (double (+ (:gold h) (* turns average-mine-count)))))
+
+(defn predicted-end-scores [input state]
+  (into {} (for [[id h] (heroes input)] [id (predicted-end-score input (:simple-path-func state)
+                                                                 (remaining-turns input) h)])))
+
+(defn predicted-winner? [input state]
+  (= (hero-id input) (first (apply max-key val (predicted-end-scores input state)))))
+
+(defn play-safe [input state unsafe-locations]
+  (if (predicted-winner? input state)
+    (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations)]
+      (and safe-beer
+        (make-return state
+          (if (= (:distance safe-beer) 1)
+            (if (< (hero-life input) 50)
+              (:direction safe-beer)
+              :stay)
+            (:direction safe-beer))
+          :play-safe)))))
+
 (defn bot [input state]
   (let [unsafe-locations   (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
         scary-enemies      (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
@@ -186,7 +233,8 @@
         next-state         {:graph              graph
                             :simple-path-func   simple-path-func
                             :previous-locations previous-locations}]
-    (or (telefrag input next-state)
+    (or (play-safe input next-state unsafe-locations)
+        (telefrag input next-state)
         (break-loop next-state)
         (spar-enemy input next-state)
         (kill-enemy input next-state)

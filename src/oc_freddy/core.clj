@@ -104,6 +104,9 @@
 (defn all-beers [board]
   (map :pos (filter #(= (:tile %) :tavern) (:tiles board))))
 
+(defn all-mines [board]
+  (map :pos (filter #(= (:tile %) :mine) (:tiles board))))
+
 (defn air? [board pos]
   (= (:tile (tile-at board pos)) :air))
 
