@@ -185,7 +185,7 @@
 
 (defn unsafe-locations [board hero-id life heroes]
   (let [ps (unsafe-locations-generator board hero-id life heroes)]
-    (concat (take 2 ps) (repeat (nth ps 2)))))
+    (concat (take 1 ps) (repeat (nth ps 1)))))
 
 (defn safe-path-search [board to open open-added closed unsafe-seq]
     (if (empty? open) nil ; no path found
