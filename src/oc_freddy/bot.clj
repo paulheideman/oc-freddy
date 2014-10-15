@@ -83,7 +83,7 @@
 
 (defn kill-enemy [input state]
   (let [targets    (vulnerable-enemies-with-mines input (:simple-path-func state))
-        paths      (map #(safe-path (board input) (hero-pos input) (:pos %) (hero-id input)
+        paths      (map #(safe-path (board input) (:simple-path-func state) (hero-pos input) (:pos %) (hero-id input)
                                     (- (hero-life input) 20) (heroes input)) targets)
         path       (first (sort-by :distance (filter (comp not nil?) paths)))]
     (if-not (empty? path)
@@ -225,10 +225,11 @@
           :play-safe)))))
 
 (defn bot [input state]
-  (let [unsafe-locations   (unsafe-locations (board input) (hero-id input) (hero-life input) (heroes input))
-        scary-enemies      (scary-enemy-locations (board input) (hero-id input) (hero-life input) (heroes input))
+  (let [
         graph              (get state :graph (make-graph (board input)))
-        simple-path-func   (memoize (fn [from to] (simple-path graph from to)))
+        simple-path-func   (get state :simple-path-func (memoize (fn [from to] (simple-path graph from to))))
+        unsafe-locations   (unsafe-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
+        scary-enemies      (scary-enemy-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
         previous-locations (cons (hero-pos input) (get state :previous-locations []))
         next-state         {:graph              graph
                             :simple-path-func   simple-path-func

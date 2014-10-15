@@ -182,6 +182,7 @@
    :size 8})
 
 (def hero-board-graph (make-graph hero-board))
+(def hero-board-path-func (partial simple-path hero-board-graph))
 
 (def full-life-heroes
   {1 {:id 1 :life 100 :spawnPos {:x 1 :y 1}}
@@ -191,7 +192,7 @@
 
 (deftest unsafe-locations-test
   (testing "Unsafe locations works"
-    (let [locs (unsafe-locations hero-board 1 10 full-life-heroes)
+    (let [locs (unsafe-locations hero-board hero-board-path-func 1 10 (make-pos 1 1) full-life-heroes)
           f    (first locs)
           s    (second locs)]
       (is (contains? f (make-pos 1 5)))
@@ -203,37 +204,37 @@
 
 (deftest safe-path-test
   (testing "Same spot test"
-    (let [results   (safe-path hero-board (make-pos 1 1) (make-pos 1 1) 1 10 full-life-heroes)
+    (let [results   (safe-path hero-board hero-board-path-func (make-pos 1 1) (make-pos 1 1) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :stay))
       (is (= distance 0))))
   (testing "One step test"
-    (let [results   (safe-path simple-board (make-pos 1 1) (make-pos 1 2) 1 10 full-life-heroes)
+    (let [results   (safe-path simple-board simple-board-path-func (make-pos 1 1) (make-pos 1 2) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
       (is (= distance 1))))
   (testing "Two step test"
-    (let [results   (safe-path hero-board (make-pos 1 1) (make-pos 1 3) 1 10 full-life-heroes)
+    (let [results   (safe-path hero-board hero-board-path-func (make-pos 1 1) (make-pos 1 3) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
       (is (= distance 2))))
   (testing "Around the corner"
-    (let [results   (safe-path hero-board (make-pos 2 2) (make-pos 5 2) 1 10 full-life-heroes)
+    (let [results   (safe-path hero-board hero-board-path-func (make-pos 2 2) (make-pos 5 2) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :west))
       (is (= distance 5))))
   (testing "Path to beer"
-    (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 3 3) 1 10 full-life-heroes)
+    (let [results   (safe-path hero-board hero-board-path-func (make-pos 5 2) (make-pos 3 3) 1 10 full-life-heroes)
           distance  (:distance results)
           direction (:direction results)]
       (is (= direction :east))
       (is (= distance 3))))
   (testing "Not safe path"
-    (let [results   (safe-path hero-board (make-pos 5 2) (make-pos 1 5) 1 10 full-life-heroes)]
+    (let [results   (safe-path hero-board hero-board-path-func (make-pos 5 2) (make-pos 1 5) 1 10 full-life-heroes)]
       (is (nil? results)))))
 
 (deftest unsafe-spawn-locations-test

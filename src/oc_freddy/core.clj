@@ -120,11 +120,17 @@
     (filter #(and (= (:tile %) :hero) (not (= (:id %) hero-id)))
             (:tiles board))))
 
-(defn scary-enemy-locations [board hero-id life heroes]
+(defn scary-enemy? [path-func pos life enemy]
+  (let [distance (or (:distance (path-func pos (:pos enemy))) Integer/MAX_VALUE)]
+    (if (= distance 3)
+      (> (:life enemy) (- life 20))
+      (> (:life enemy) life))))
+
+(defn scary-enemy-locations [board path-func hero-id life hero-pos heroes]
   (map :pos
     (filter #(and (= (:tile %) :hero)
                   (not (= (:id %) hero-id))
-                  (> (:life (get heroes (:id %))) life))
+                  (scary-enemy? path-func hero-pos life (get heroes (:id %))))
             (:tiles board))))
 
 (defn shortest-distance [route-func from ps]
@@ -170,11 +176,11 @@
                   (unsafe-spawn-locations (less-one-hit (apply dissoc spawn-life-map dangerous-spawn-locs)))))))))
 
 (defn unsafe-locations-generator
-  ([board hero-id life heroes]
+  ([board path-func hero-id life hero-pos heroes]
     (let [can-move-from-neighbors (fn [pos] (filter #(not (stay-in-place? board %))
                                                           (neighbors-of (:size board) pos)))
           scary-spawn-locations   (unsafe-spawn-locations heroes hero-id)
-          starting-locations      (concat (scary-enemy-locations board hero-id life heroes) 
+          starting-locations      (concat (scary-enemy-locations board path-func hero-id life hero-pos heroes)
                                           (first scary-spawn-locations))]
       (unsafe-locations-generator can-move-from-neighbors
                                   (set (union starting-locations (mapcat can-move-from-neighbors starting-locations)))
@@ -183,8 +189,8 @@
     (let [new-set (union previous (set (mapcat can-move-from-neighbors (concat previous (first scary-spawn-locations)))))]
       (lazy-seq (cons new-set (unsafe-locations-generator can-move-from-neighbors new-set (rest scary-spawn-locations)))))))
 
-(defn unsafe-locations [board hero-id life heroes]
-  (let [ps (unsafe-locations-generator board hero-id life heroes)]
+(defn unsafe-locations [board path-func hero-id life hero-pos heroes]
+  (let [ps (unsafe-locations-generator board path-func hero-id life hero-pos heroes)]
     (concat (take 1 ps) (repeat (nth ps 1)))))
 
 (defn safe-path-search [board to open open-added closed unsafe-seq]
@@ -209,7 +215,7 @@
                    unsafe-seq))))))
 
 (defn safe-path
-  ([board from to hero-id life heroes] (safe-path board (unsafe-locations board hero-id life heroes) from to))
+  ([board path-func from to hero-id life heroes] (safe-path board (unsafe-locations board path-func hero-id life from heroes) from to))
   ([board unsafe-seq from to]
     (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} unsafe-seq)))
 
