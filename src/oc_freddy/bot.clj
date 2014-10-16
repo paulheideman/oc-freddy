@@ -224,16 +224,24 @@
             (:direction safe-beer))
           :play-safe)))))
 
+(defn closest-mine-to-mine [board path-func ms m]
+  (apply min (map #(or (:distance (shortest-distance path-func % (disj ms m))) Integer/MAX_VALUE) (neighbors-of (:size board) m))))
+
+(defn average-distance-between-mines [board path-func]
+  (let [ms (set (all-mines board))]
+    (double (/ (apply + (map (partial closest-mine-to-mine board path-func ms) ms)) (count ms)))))
+
 (defn bot [input state]
-  (let [
-        graph              (get state :graph (make-graph (board input)))
-        simple-path-func   (get state :simple-path-func (memoize (fn [from to] (simple-path graph from to))))
-        unsafe-locations   (unsafe-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
-        scary-enemies      (scary-enemy-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
-        previous-locations (cons (hero-pos input) (get state :previous-locations []))
-        next-state         {:graph              graph
-                            :simple-path-func   simple-path-func
-                            :previous-locations previous-locations}]
+  (let [graph                  (get state :graph (make-graph (board input)))
+        simple-path-func       (get state :simple-path-func (memoize (fn [from to] (simple-path graph from to))))
+        unsafe-locations       (unsafe-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
+        scary-enemies          (scary-enemy-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
+        previous-locations     (cons (hero-pos input) (get state :previous-locations []))
+        distance-between-mines (get state :distance-between-mines (average-distance-between-mines (board input) simple-path-func))
+        next-state             {:graph                  graph
+                                :simple-path-func       simple-path-func
+                                :previous-locations     previous-locations
+                                :distance-between-mines distance-between-mines}]
     (or (play-safe input next-state unsafe-locations)
         (telefrag input next-state)
         (break-loop next-state)
