@@ -190,17 +190,18 @@
 (defn remaining-turns [input]
   (- 300 (/ (:turn (:game input)) 4)))
 
-(defn distance-to-mines [board simple-path-func h]
-  (map (comp :distance (partial simple-path-func (make-pos (:pos h)))) (capturable-mines board (:id h))))
+(defn score-accrued-negative [current-mine-count turns average-mine-distance]
+  (max (- current-mine-count (/ turns average-mine-distance)) 0))
+
+(defn score-accrued-positive [current-mine-count turns average-mine-distance total-mine-count]
+  (min (+ current-mine-count (/ turns average-mine-distance)) total-mine-count))
 
 (defn predicted-end-score [input average-mine-distance simple-path-func turns h]
-  (let [ds                       (distance-to-mines (board input) simple-path-func h)
-        current-mine-count       (:mineCount h)
-        predicted-end-mine-count (if (empty? ds) current-mine-count
-                                   (if (= (hero-id input) (:id h))
-                                     (max (- current-mine-count (/ turns average-mine-distance)) 0)
-                                     (min (+ current-mine-count (/ turns average-mine-distance))
-                                          (count (all-mines (board input))))))
+  (let [current-mine-count       (:mineCount h)
+        predicted-end-mine-count (if (= (hero-id input) (:id h))
+                                   (score-accrued-negative current-mine-count turns average-mine-distance)
+                                   (score-accrued-positive current-mine-count turns average-mine-distance
+                                        (count (all-mines (board input)))))
         average-mine-count       (/ (+ current-mine-count predicted-end-mine-count) 2)]
     (double (+ (:gold h) (* turns average-mine-count)))))
 
