@@ -1,5 +1,5 @@
 (ns oc-freddy.core
-  (:use [clojure.set :only (union)])
+  (:use [clojure.set :only (union difference)])
   (:use [clojure.core.match :only (match)])
   (:use [loom.graph])
   (:use [loom.alg-generic :only (bf-path)]))
@@ -148,8 +148,10 @@
 (defn closest-beer [board simple-path-func pos]
   (shortest-distance simple-path-func pos (all-beers board)))
 
-(defn closest-capturable-mine [board simple-path-func pos hero-id]
-  (shortest-distance simple-path-func pos (capturable-mines board hero-id)))
+(defn closest-capturable-mine
+  ([board simple-path-func pos hero-id] (closest-capturable-mine board simple-path-func pos hero-id #{}))
+  ([board simple-path-func pos hero-id camped-mines]
+    (shortest-distance simple-path-func pos (difference (set (capturable-mines board hero-id)) camped-mines))))
 
 (defn capturable-mines? [board hero-id]
   (not (empty? (capturable-mines board hero-id))))
@@ -222,8 +224,11 @@
 (defn closest-safe-beer [board pos unsafe-locations]
   (shortest-distance (partial safe-path board unsafe-locations) pos (all-beers board)))
 
-(defn closest-safe-capturable-mine [board pos hero-id unsafe-locations]
-  (shortest-distance (partial safe-path board unsafe-locations) pos (capturable-mines board hero-id)))
+(defn closest-safe-capturable-mine
+  ([board pos hero-id unsafe-locations] (closest-safe-capturable-mine board pos hero-id unsafe-locations {}))
+  ([board pos hero-id unsafe-locations camped-mines]
+    (shortest-distance (partial safe-path board unsafe-locations) pos
+                       (difference (set (capturable-mines board hero-id)) camped-mines))))
 
 (defn all-enemies-and-mines [board hero-id]
   (concat (capturable-mines board hero-id) (enemy-locations board hero-id)))

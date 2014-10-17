@@ -114,8 +114,9 @@
 (defn enemies-can-strike? [pos life simple-path-func heroes]
   (not (empty? (filter (partial enemy-can-strike? pos life simple-path-func) (vals heroes)))))
 
-(defn go-to-mine [input unsafe-locations state]
-  (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input) (hero-id input) unsafe-locations)]
+(defn go-to-mine [input unsafe-locations state camped-mines]
+  (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input)
+                                                (hero-id input) unsafe-locations camped-mines)]
     (if (and (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
              (not (enemies-can-strike? (hero-pos input) (hero-life input)
                                        (:simple-path-func state) (heroes-without-me input))))
@@ -191,10 +192,12 @@
   (- 300 (/ (:turn (:game input)) 4)))
 
 (defn score-accrued-negative [current-mine-count turns average-mine-distance]
-  (max (- current-mine-count (/ turns average-mine-distance)) 0))
+  (max (- current-mine-count
+          (/ turns (if (zero? average-mine-distance) Integer/MAX_VALUE average-mine-distance))) 0))
 
 (defn score-accrued-positive [current-mine-count turns average-mine-distance total-mine-count]
-  (min (+ current-mine-count (/ turns average-mine-distance)) total-mine-count))
+  (min (+ current-mine-count
+          (/ turns (if (zero? average-mine-distance) Integer/MAX_VALUE average-mine-distance))) total-mine-count))
 
 (defn predicted-end-score [input average-mine-distance simple-path-func turns h]
   (let [current-mine-count       (:mineCount h)
@@ -230,7 +233,22 @@
 
 (defn average-distance-between-mines [board path-func]
   (let [ms (set (all-mines board))]
-    (double (/ (apply + (map (partial closest-mine-to-mine board path-func ms) ms)) (count ms)))))
+    (if (empty? ms) Double/MAX_VALUE
+      (double (/ (apply + (map (partial closest-mine-to-mine board path-func ms) ms)) (count ms))))))
+
+(defn enemy-next-to? [board pos h]
+  (contains? (set (neighbors-of (:size board) pos)) (make-pos (:pos h))))
+
+(defn any-enemies-next-to? [board heroes pos]
+  (some identity (map (partial enemy-next-to? board pos) (vals heroes))))
+
+(defn currently-camped-mines [input]
+  (filter (partial any-enemies-next-to? (board input) (heroes-without-me input)) (all-mines (board input))))
+
+(defn camped-mine-count [camped-mines input]
+  (let [currently-camped (set (currently-camped-mines input))]
+    (into {} (map (fn [m] [m (max (min (+ (get camped-mines m 0) (if (contains? currently-camped m) 1 -1)) 3) 0)])
+                  (all-mines (board input))))))
 
 (defn bot [input state]
   (let [graph                  (get state :graph (make-graph (board input)))
@@ -238,18 +256,22 @@
         unsafe-locations       (unsafe-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
         scary-enemies          (scary-enemy-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
         previous-locations     (cons (hero-pos input) (get state :previous-locations []))
-        distance-between-mines (get state :distance-between-mines (average-distance-between-mines (board input) simple-path-func))
+        distance-between-mines (get state :distance-between-mines
+                                    (average-distance-between-mines (board input) simple-path-func))
+        camped-mine-count      (camped-mine-count (get state :camped-mine-count {}) input)
+        camped-mines           (map first (filter (fn [[m c]] (= 3 c)) camped-mine-count))
         next-state             {:graph                  graph
                                 :simple-path-func       simple-path-func
                                 :previous-locations     previous-locations
-                                :distance-between-mines distance-between-mines}]
+                                :distance-between-mines distance-between-mines
+                                :camped-mine-count      camped-mine-count}]
     (or (play-safe input next-state unsafe-locations)
         (telefrag input next-state)
         (break-loop next-state)
         (spar-enemy input next-state)
-        (kill-enemy input next-state)
         (get-full-health input next-state)
-        (go-to-mine input unsafe-locations next-state)
+        (go-to-mine input unsafe-locations next-state camped-mines)
         (go-to-beer input unsafe-locations next-state)
+        (kill-enemy input next-state)
         (suicide input next-state)
         (run input scary-enemies next-state))))
