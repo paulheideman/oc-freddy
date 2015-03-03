@@ -250,7 +250,7 @@
     (into {} (map (fn [m] [m (max (min (+ (get camped-mines m 0) (if (contains? currently-camped m) 1 -1)) 3) 0)])
                   (all-mines (board input))))))
 
-(defn bot [input state]
+(defn bot-calc [input state]
   (let [graph                  (get state :graph (make-graph (board input)))
         simple-path-func       (get state :simple-path-func (memoize (fn [from to] (simple-path graph from to))))
         unsafe-locations       (unsafe-locations (board input) simple-path-func (hero-id input) (hero-life input) (hero-pos input) (heroes input))
@@ -275,3 +275,6 @@
         (kill-enemy input next-state)
         (suicide input next-state)
         (run input scary-enemies next-state))))
+
+(defn bot [input state]
+  (deref (future (bot-calc input state)) 500 (make-return state :stay :timeout)))
