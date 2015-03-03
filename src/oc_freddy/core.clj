@@ -73,8 +73,9 @@
 (defn distance-from-start [node]
   (count (:history node)))
 
-(defn manhattan-distance [from to]
+(defn manhattan-distance-calc [from to]
   (+ (Math/abs (- (:x from) (:x to))) (Math/abs (- (:y from) (:y to)))))
+(def manhattan-distance (memoize manhattan-distance-calc))
 
 (defn first-direction [node]
   (let [history (reverse (:history node))
