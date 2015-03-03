@@ -114,18 +114,18 @@
 (defn enemies-can-strike? [pos life simple-path-func heroes]
   (not (empty? (filter (partial enemy-can-strike? pos life simple-path-func) (vals heroes)))))
 
-(defn go-to-mine [input unsafe-locations state camped-mines]
+(defn go-to-mine [input unsafe-locations state camped-mines path-func]
   (let [safe-mine (closest-safe-capturable-mine (board input) (hero-pos input)
-                                                (hero-id input) unsafe-locations camped-mines)]
+                                                (hero-id input) unsafe-locations camped-mines path-func)]
     (if (and (> (- (hero-life input) (or (:distance safe-mine) Integer/MAX_VALUE)) 20)
              (not (enemies-can-strike? (hero-pos input) (hero-life input)
                                        (:simple-path-func state) (heroes-without-me input))))
       (and safe-mine
         (make-return state (:direction safe-mine) :go-to-mine :destination (:destination safe-mine))))))
 
-(defn go-to-beer [input unsafe-locations state]
+(defn go-to-beer [input unsafe-locations state path-func]
   (if (and (money? input) (not (full-health? input)))
-    (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations)]
+    (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations path-func)]
       (and safe-beer (make-return state (:direction safe-beer) :go-to-beer :destination (:destination safe-beer))))))
 
 (defn next-to-unowned-mine [input state]
@@ -216,9 +216,9 @@
 (defn predicted-winner? [input state]
   (= (hero-id input) (first (apply max-key val (predicted-end-scores input state)))))
 
-(defn play-safe [input state unsafe-locations]
+(defn play-safe [input state unsafe-locations path-func]
   (if (predicted-winner? input state)
-    (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations)]
+    (let [safe-beer (closest-safe-beer (board input) (hero-pos input) unsafe-locations path-func)]
       (and safe-beer
         (make-return state
           (if (= (:distance safe-beer) 1)
@@ -265,13 +265,13 @@
                                 :previous-locations     previous-locations
                                 :distance-between-mines distance-between-mines
                                 :camped-mine-count      camped-mine-count}]
-    (or (play-safe input next-state unsafe-locations)
+    (or (play-safe input next-state unsafe-locations simple-path-func)
         (telefrag input next-state)
         (break-loop next-state)
         (spar-enemy input next-state)
         (get-full-health input next-state)
-        (go-to-mine input unsafe-locations next-state camped-mines)
-        (go-to-beer input unsafe-locations next-state)
+        (go-to-mine input unsafe-locations next-state camped-mines simple-path-func)
+        (go-to-beer input unsafe-locations next-state simple-path-func)
         (kill-enemy input next-state)
         (suicide input next-state)
         (run input scary-enemies next-state))))

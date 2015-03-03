@@ -195,7 +195,7 @@
   (let [ps (unsafe-locations-generator board path-func hero-id life hero-pos heroes)]
     (concat (take 1 ps) (repeat (nth ps 1)))))
 
-(defn safe-path-search [board to open open-added closed unsafe-seq]
+(defn safe-path-search [board to open open-added closed unsafe-seq path-func]
     (if (empty? open) nil ; no path found
       (let [current        (first open)
             pos            (:pos current)
@@ -210,24 +210,28 @@
                           (map (fn [p]
                                  (let [new-pos (if (and (stay-in-place? board p) (not (= to p))) pos p)]
                                    (make-node new-pos
-                                              (inc (+ (distance-from-start current) (manhattan-distance new-pos to)))
+                                              (inc (+ (distance-from-start current)
+                                                      (:distance (path-func new-pos to))))
                                               (cons pos before)))) (shuffle neighbors)))
                    (union neighbors open-added)
                    (conj closed pos)
-                   unsafe-seq))))))
+                   unsafe-seq path-func))))))
 
 (defn safe-path
-  ([board path-func from to hero-id life heroes] (safe-path board (unsafe-locations board path-func hero-id life from heroes) from to))
-  ([board unsafe-seq from to]
-    (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} unsafe-seq)))
+  ([board path-func from to hero-id life heroes]
+    (safe-path board path-func (unsafe-locations board path-func hero-id life from heroes) from to))
+  ([board path-func unsafe-seq from to]
+    (safe-path-search board (make-pos to) [(make-node from 0 [])] #{from} #{} unsafe-seq path-func)))
 
-(defn closest-safe-beer [board pos unsafe-locations]
-  (shortest-distance (partial safe-path board unsafe-locations) pos (all-beers board)))
+(defn closest-safe-beer [board pos unsafe-locations path-func]
+  (shortest-distance (partial safe-path board path-func unsafe-locations)
+                     pos (all-beers board)))
 
 (defn closest-safe-capturable-mine
-  ([board pos hero-id unsafe-locations] (closest-safe-capturable-mine board pos hero-id unsafe-locations {}))
-  ([board pos hero-id unsafe-locations camped-mines]
-    (shortest-distance (partial safe-path board unsafe-locations) pos
+  ([board pos hero-id unsafe-locations path-func]
+    (closest-safe-capturable-mine board pos hero-id unsafe-locations {} path-func))
+  ([board pos hero-id unsafe-locations camped-mines path-func]
+    (shortest-distance (partial safe-path board path-func unsafe-locations) pos
                        (difference (set (capturable-mines board hero-id)) camped-mines))))
 
 (defn all-enemies-and-mines [board hero-id]
