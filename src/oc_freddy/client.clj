@@ -49,11 +49,18 @@
    :west  "west"
    :stay  "stay"})
 
+(defmacro time
+  "Evaluates expr and prints the time it took. Returns the value of expr."
+  [expr]
+  `(let [start# (. System (nanoTime))
+         ret# ~expr]
+    (println " -" (str (/ (double (- (. System (nanoTime)) start#)) 1000000.0) " ms")) ret#))
+
 (defn step [from]
   (loop [input from
          state {}]
     (print "(" (:turn (:game input)) "/" (:maxTurns (:game input)) "-" (:life (:hero input)) ")  - ")
-    (let [result    (bot input state)
+    (let [result    (time (bot input state))
           dir       (first result)
           new-state (second result)
           next      (request (:playUrl input) {:dir (get dir-map dir "stay")})]
