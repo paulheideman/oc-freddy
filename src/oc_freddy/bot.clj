@@ -25,7 +25,7 @@
     (or (= pos spawn-pos) (contains? (set (neighbors-of size spawn-pos)) pos))))
 
 (defn make-return [state direction action & ps]
-  (print direction action ps)
+  (if (not (= action :timeout)) (print direction action ps))
   [direction (into (into state [[:action action]])
                    (map (partial apply vector) (partition 2 ps)))])
 
