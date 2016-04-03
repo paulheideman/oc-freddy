@@ -4,11 +4,12 @@
   (:use [oc-freddy.core :only [make-pos]])
   (:use [slingshot.slingshot :only [try+, throw+]])
   (:use [clojure.set :only (union)])
+  (:use [cheshire.core :only (parse-string)])
   (:use [clojure.java.browse :only (browse-url)])
   (:use [clojure.core.match :only (match)])
   (:use [clojure.core.async :only (go)]))
 
-(require '[clj-http.client :as http])
+(require '[clj-http.lite.client :as http])
 
 (def server-url "http://vindinium.org")
 
@@ -37,7 +38,9 @@
 (defn request [url, params]
   "makes a POST request and returns a parsed input"
   (try+
-    (parse-input (:body (http/post url {:form-params params :as :json})))
+    (parse-input
+      (parse-string (:body
+        (http/post url {:form-params params :as :json})) true))
     (catch map? {:keys [status body]}
       (println (str "[" status "] " body))
       (throw+))))
