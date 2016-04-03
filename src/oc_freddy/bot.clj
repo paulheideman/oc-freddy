@@ -30,8 +30,11 @@
                    (map (partial apply vector) (partition 2 ps)))])
 
 (defn not-closer-to-beer [input path-func h]
-  (> (or (:distance (closest-beer (board input) path-func (:pos h))) Integer/MAX_VALUE)
-     (or (:distance (closest-beer (board input) path-func (hero-pos input))) Integer/MAX_VALUE)))
+  (let [enemy-beer (closest-beer (board input) path-func (:pos h))
+        my-path    (path-func (hero-pos input) (:destination enemy-beer))]
+    (print "E:" h "beer:" enemy-beer "me:" my-path)
+    (> (or (:distance enemy-beer) Integer/MAX_VALUE)
+       (or (:distance my-path) Integer/MAX_VALUE))))
 
 (defn within-one? [board simple-path-func pos h]
   (< (or (:distance (simple-path-func pos (:pos h))) Integer/MAX_VALUE) 3))
