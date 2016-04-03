@@ -1,5 +1,6 @@
 (ns oc-freddy.bot
   (:use [oc-freddy.core])
+  (:use [clansi.core])
   (:use [clojure.set :only (intersection)]))
 
 (defn hero-health [input] (:life (:hero input)))
@@ -24,8 +25,16 @@
         spawn-pos (:spawnPos h)]
     (or (= pos spawn-pos) (contains? (set (neighbors-of size spawn-pos)) pos))))
 
+(defn action-with-colour [action]
+  (case action
+        :go-to-mine      (style action :magenta)
+        :go-to-beer      (style action :yellow)
+        :get-full-health (style action :green)
+        :run             (style action :red)
+        (style action :bg-black)))
+
 (defn make-return [state direction action & ps]
-  (if (not (= action :timeout)) (print direction action ps))
+  (if (not (= action :timeout)) (print direction (action-with-colour action) ps))
   [direction (into (into state [[:action action]])
                    (map (partial apply vector) (partition 2 ps)))])
 

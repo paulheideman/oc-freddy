@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [clj-http-lite "0.3.0"]
                  [cheshire "5.5.0"]
+                 [myguidingstar/clansi "1.3.0"]
                  [slingshot "0.10.3"]
                  [aysylu/loom "0.5.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
