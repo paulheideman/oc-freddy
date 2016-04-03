@@ -30,7 +30,12 @@
         :go-to-mine      (style action :magenta)
         :go-to-beer      (style action :yellow)
         :get-full-health (style action :green)
-        :run             (style action :red)
+        :run             (style action :bg-red)
+        :kill-enemy      (style action :red)
+        :spar-enemy      (style action :red)
+        :suicide         (style action :bg-red)
+        :break-loop      (style action :bg-yellow)
+        :play-safe       (style action :bg-green)
         (style action :bg-black)))
 
 (defn make-return [state direction action & ps]
@@ -281,9 +286,9 @@
         (break-loop next-state)
         (spar-enemy input next-state)
         (get-full-health input next-state)
+        (kill-enemy input next-state)
         (go-to-mine input unsafe-locations next-state camped-mines simple-path-func)
         (go-to-beer input unsafe-locations next-state simple-path-func)
-        (kill-enemy input next-state)
         (suicide input next-state)
         (run input scary-enemies next-state))))
 
