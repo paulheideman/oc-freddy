@@ -32,7 +32,6 @@
 (defn not-closer-to-beer [input path-func h]
   (let [enemy-beer (closest-beer (board input) path-func (:pos h))
         my-path    (path-func (hero-pos input) (:destination enemy-beer))]
-    (print "E:" h "beer:" enemy-beer "me:" my-path)
     (> (or (:distance enemy-beer) Integer/MAX_VALUE)
        (or (:distance my-path) Integer/MAX_VALUE))))
 
